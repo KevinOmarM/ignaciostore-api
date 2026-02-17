@@ -18,6 +18,12 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["admin", "user"],
+      default: "user",
+    },
+    debt: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     status: {
       type: String,

@@ -1,0 +1,11 @@
+//RUTAS API
+//sera el enrutador unico para las rutas de la API
+const router= require('express').Router();
+
+
+router.use('/users', require('./user.route'));
+router.use('/products', require('./products.route'));
+//router.use('/buys', require('./buy.route'));
+//router.use('/logs', require('./log.route'));
+
+module.exports = router;
