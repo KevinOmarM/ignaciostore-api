@@ -2,7 +2,18 @@ const Product = require("../models/productModel.js");
 
 exports.getProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
+
+    const products = await Product.paginate(
+      {},
+      {
+        page,
+        limit,
+        sort: { createdAt: -1 },
+      },
+    );
+
     return res.status(200).json(products);
   } catch (error) {
     return res.status(500).json({ message: "Error al obtener productos", error: error.message });

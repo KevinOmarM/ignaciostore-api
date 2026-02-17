@@ -2,7 +2,18 @@ const User = require("../models/userModel.js");
 
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
+
+    const users = await User.paginate(
+      {},
+      {
+        page,
+        limit,
+        sort: { createdAt: -1 },
+      },
+    );
+
     return res.status(200).json(users);
   } catch (error) {
     return res.status(500).json({ message: "Error al obtener usuarios", error: error.message });
