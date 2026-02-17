@@ -2,8 +2,8 @@ const User = require("../models/userModel.js");
 
 exports.getUsers = async (req, res) => {
   try {
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
 
     const users = await User.paginate(
       {},
@@ -16,7 +16,9 @@ exports.getUsers = async (req, res) => {
 
     return res.status(200).json(users);
   } catch (error) {
-    return res.status(500).json({ message: "Error al obtener usuarios", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Error al obtener usuarios", error: error.message });
   }
 };
 
@@ -30,20 +32,24 @@ exports.getUserById = async (req, res) => {
 
     return res.status(200).json(user);
   } catch (error) {
-    return res.status(500).json({ message: "Error al obtener usuario", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Error al obtener usuario", error: error.message });
   }
 };
 
-exports.createUser = async (req, res) => {
+exports.postUser = async (req, res) => {
   try {
     const newUser = await User.create(req.body);
     return res.status(201).json(newUser);
   } catch (error) {
-    return res.status(400).json({ message: "Error al crear usuario", error: error.message });
+    return res
+      .status(400)
+      .json({ message: "Error al crear usuario", error: error.message });
   }
 };
 
-exports.updateUser = async (req, res) => {
+exports.putUser = async (req, res) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -56,7 +62,9 @@ exports.updateUser = async (req, res) => {
 
     return res.status(200).json(updatedUser);
   } catch (error) {
-    return res.status(400).json({ message: "Error al actualizar usuario", error: error.message });
+    return res
+      .status(400)
+      .json({ message: "Error al actualizar usuario", error: error.message });
   }
 };
 
@@ -70,6 +78,8 @@ exports.deleteUser = async (req, res) => {
 
     return res.status(200).json({ message: "Usuario eliminado" });
   } catch (error) {
-    return res.status(500).json({ message: "Error al eliminar usuario", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Error al eliminar usuario", error: error.message });
   }
 };

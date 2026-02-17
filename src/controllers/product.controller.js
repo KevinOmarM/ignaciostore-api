@@ -1,5 +1,5 @@
 const Product = require("../models/productModel.js");
-
+//si gustas esto lo puedes borrar o lo puedes refatorizar
 exports.getProducts = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
