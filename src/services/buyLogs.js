@@ -37,6 +37,31 @@ class BuyLogsService {
             throw new Error("Error obteniendo el registro de compra")
         }
     }
+
+    async getMonthlyLogs(month, year) {
+
+        const m = Number(month)
+        const y = Number(year)
+
+        if (!m || !y)
+            throw new Error("Mes y año son requeridos")
+
+        if (m < 1 || m > 12)
+            throw new Error("Mes inválido")
+
+        const start = new Date(y, m - 1, 1)
+        const end = new Date(y, m, 1)
+
+        if (isNaN(start) || isNaN(end))
+            throw new Error("Fecha inválida generada")
+
+        return await buyLogsModel.find({
+            createdAt: {
+                $gte: start,
+                $lt: end
+            }
+        }).populate("id_user", "name username")
+    }
 }
 
 module.exports = new BuyLogsService()

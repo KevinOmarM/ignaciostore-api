@@ -1,11 +1,12 @@
 const mongoose = require("mongoose")
 const buysLogsSchema = new mongoose.Schema({
     id_user: {
-        type: Object,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
         required: true
     },
     products: [{
-        id: Object,
+        id: mongoose.Schema.Types.ObjectId,
         name: String,
         price: Number
     }]
