@@ -1,4 +1,5 @@
 const express = require("express");
+const { checkAuth } = require("../../middleware/auth");
 const router = express.Router();
 
 const {
@@ -6,7 +7,7 @@ const {
     getLogsByUserController
 } = require("../../controllers/logController");
 
-router.get("/", getAllLogsController);
-router.get("/user/:userId", getLogsByUserController);
+router.get("/", checkAuth, getAllLogsController);
+router.get("/user/:userId", checkAuth, getLogsByUserController);
 
 module.exports = router;
