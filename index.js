@@ -2,6 +2,7 @@ require('dotenv').config();
 const connectDB = require("./config/dbConnection");
 const express = require("express");
 const cors = require("cors");
+const fileUpload = require("express-fileupload");
 
 const app = express();
 
@@ -11,6 +12,13 @@ app.use(cors());
 app.get("/", (req, res) => {
   res.send("API funcionando");
 });
+
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "./storage/imgs",
+  })
+);
 
 app.use(require('./src/routes'));
 
