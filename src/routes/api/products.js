@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const { checkAuth } = require("../../../middleware/auth");
 const {
     createProductController,
     getAllProductsController,
@@ -7,14 +8,14 @@ const {
     updateProductController,
     deleteProductController
 
-} = require("../../src/controllers/productController");
+} = require("../../controllers/productController");
 
-router.get("/", getAllProductsController);
-router.get("/:id", getProductByIdController);
-router.get("/search/:name", getProductByName);
+router.get("/", checkAuth, getAllProductsController);
+router.get("/:id", checkAuth, getProductByIdController);
+router.get("/search/:name", checkAuth, getProductByName);
 
-router.post("/", createProductController);
-router.put("/:id", updateProductController);
-router.delete("/:id", deleteProductController);
+router.post("/", checkAuth, createProductController);
+router.put("/:id", checkAuth, updateProductController);
+router.delete("/:id", checkAuth, deleteProductController);
 
 module.exports = router;
