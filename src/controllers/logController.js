@@ -1,5 +1,5 @@
 const logService = require("../services/logService.js");
-const { customResponse } = require("../../helpers/objectDataResponse.js")
+const { customResponse } = require("../helpers/objectDataResponse.js")
 
 const getAllLogsController = async (req, res) => {
     try {

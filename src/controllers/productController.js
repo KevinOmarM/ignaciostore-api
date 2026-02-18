@@ -1,12 +1,7 @@
 const productService = require("../services/productService.js");
-<<<<<<< HEAD
 const { customResponse } = require("../helpers/objectDataResponse.js")
 const { uploadImage, deleteImage } = require("../helpers/cloudinary.js")
-=======
 const logService = require("../services/logService.js");
-const { customResponse } = require("../../helpers/objectDataResponse.js")
-const { uploadImage, deleteImage } = require("../../helpers/cloudinary.js")
->>>>>>> feature/logs
 const fs = require("fs-extra");
 
 const createProductController = async (req, res) => {
