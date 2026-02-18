@@ -1,64 +1,232 @@
-const User = require("../models/userModel.js");
+const { customResponse } = require("../helpers/objectDataResponse");
+const { 
+  getAllUsersService, 
+  getUserByIdService, 
+  createUserService,
+  updateUserService,
+  deleteUserService,
+  addUserDebtService,
+  subtractUserDebtService,
+  getUserByUsernameService,
+} = require("../services/userService");
+const bcrypt = require('bcrypt');
 
-exports.getUsers = async (req, res) => {
+const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();
-    return res.status(200).json(users);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const users = await getAllUsersService({ page, limit });
+
+    return customResponse(res, 200, users, "Usuarios obtenidos exitosamente");
   } catch (error) {
-    return res.status(500).json({ message: "Error al obtener usuarios", error: error.message });
+    console.error("Error en getAllUsers controller:", error.message);
+    return customResponse(res, 500, null, "Error interno del servidor");
   }
 };
 
-exports.getUserById = async (req, res) => {
+const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const { id } = req.params;
 
-    if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+    const user = await getUserByIdService(id);
+
+    return customResponse(res, 200, user, "Usuario obtenido exitosamente");
+  } catch (error) {
+    console.error("Error en getUserById controller:", error.message);
+
+    if (error.message.includes("no encontrado")) {
+      return customResponse(res, 404, null, error.message);
     }
 
-    return res.status(200).json(user);
-  } catch (error) {
-    return res.status(500).json({ message: "Error al obtener usuario", error: error.message });
+    if (error.message.includes("ID inválido")) {
+      return customResponse(res, 400, null, error.message);
+    }
+
+    return customResponse(res, 500, null, "Error interno del servidor");
   }
 };
 
-exports.createUser = async (req, res) => {
+const createUser = async (req, res) => {
   try {
-    const newUser = await User.create(req.body);
-    return res.status(201).json(newUser);
-  } catch (error) {
-    return res.status(400).json({ message: "Error al crear usuario", error: error.message });
-  }
-};
+    const { firstName, lastName, username, password, role, debt } = req.body;
 
-exports.updateUser = async (req, res) => {
-  try {
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
+    if (!firstName || !lastName || !username || !password) {
+      return customResponse(res, 400, null, "Faltan campos obligatorios");
+    }
+
+    const existingUser = await getUserByUsernameService(username);
+
+    if (existingUser) {
+      return customResponse(res, 400, null, "El usuario ya existe");
+    }
+
+    
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    console.log("username:", username);
+
+    const newUser = await createUserService({
+      firstName,
+      lastName,
+      username,
+      password: hashedPassword,
+      role,
+      debt
     });
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+    console.log(newUser);
+
+    return customResponse(res, 201, newUser, "Usuario creado exitosamente");
+  } catch (error) {
+    console.error("Error en createUser controller:", error.message);
+
+    if (error.message.includes("ya existe")) {
+      return customResponse(res, 400, null, error.message);
     }
 
-    return res.status(200).json(updatedUser);
-  } catch (error) {
-    return res.status(400).json({ message: "Error al actualizar usuario", error: error.message });
+    return customResponse(res, 500, null, "Error interno del servidor");
   }
 };
 
-exports.deleteUser = async (req, res) => {
+const updateUser = async (req, res) => {
   try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    const { id } = req.params;
 
-    if (!deletedUser) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+    if (Object.keys(req.body).length === 0 && !req.files?.image) {
+      return customResponse(res, 400, null, 'Debe proporcionar al menos un campo para actualizar');
     }
 
-    return res.status(200).json({ message: "Usuario eliminado" });
+    
+
+    const updatedUser = await updateUserService(id, req.body);
+
+    return customResponse(
+      res,
+      200,
+      updatedUser,
+      "Usuario actualizado exitosamente"
+    );
   } catch (error) {
-    return res.status(500).json({ message: "Error al eliminar usuario", error: error.message });
+    console.error("Error en updateUser controller:", error.message);
+
+    if (error.message.includes("ID inválido")) {
+      return customResponse(res, 400, null, error.message);
+    }
+
+    if (error.message.includes("no encontrado")) {
+      return customResponse(res, 404, null, error.message);
+    }
+
+    if (error.message.includes("campos válidos")) {
+      return customResponse(res, 400, null, error.message);
+    }
+
+    return customResponse(res, 500, null, "Error interno del servidor");
   }
+};
+
+
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedUser = await deleteUserService(id);
+
+    return customResponse(
+      res,
+      200,
+      deletedUser,
+      "Usuario desactivado exitosamente"
+    );
+  } catch (error) {
+    console.error("Error en deleteUser controller:", error.message);
+
+    if (error.message.includes("ID inválido")) {
+      return customResponse(res, 400, null, error.message);
+    }
+
+    if (error.message.includes("no encontrado")) {
+      return customResponse(res, 404, null, error.message);
+    }
+
+    return customResponse(res, 500, null, "Error interno del servidor");
+  }
+};
+
+const addUserDebt = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return customResponse(res, 400, null, "Monto inválido");
+    }
+
+    await addUserDebtService(id, amount);
+
+    return customResponse(
+      res,
+      200,
+      null,
+      "Deuda agregada correctamente"
+    );
+  } catch (error) {
+    console.error("Error en addUserDebt controller:", error.message);
+
+    if (error.message.includes("ID inválido")) {
+      return customResponse(res, 400, null, error.message);
+    }
+
+    if (error.message.includes("no encontrado")) {
+      return customResponse(res, 404, null, error.message);
+    }
+
+    return customResponse(res, 500, null, "Error interno del servidor");
+  }
+};
+
+const subtractUserDebt = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return customResponse(res, 400, null, "Monto inválido");
+    }
+
+    await subtractUserDebtService(id, amount);
+
+    return customResponse(
+      res,
+      200,
+      null,
+      "Deuda restada correctamente"
+    );
+  } catch (error) {
+    console.error("Error en subtractUserDebt controller:", error.message);
+
+    if (error.message.includes("ID inválido")) {
+      return customResponse(res, 400, null, error.message);
+    }
+
+    if (error.message.includes("no encontrado")) {
+      return customResponse(res, 404, null, error.message);
+    }
+
+    return customResponse(res, 500, null, "Error interno del servidor");
+  }
+};
+
+
+
+module.exports = {
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  addUserDebt,
+  subtractUserDebt,
 };

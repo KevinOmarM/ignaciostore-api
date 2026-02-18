@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
   res.send("API funcionando");
 });
 
-app.use(require('./routes'));
+app.use(require('./src/routes'));
 
 const PORT = process.env.PORT || 5000;
 
