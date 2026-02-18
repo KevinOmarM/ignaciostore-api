@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const checkAuth = require("../../middlewares/checkAuth");
 
 const {
   getAllUsers,
@@ -12,24 +13,24 @@ const {
 } = require("../../controllers/user.controller"); 
 
 // Get all users (paginated)
-router.get("/", getAllUsers);
+router.get("/", checkAuth, getAllUsers);
 
 // Get user by ID
-router.get("/:id", getUserById);
+router.get("/:id", checkAuth, getUserById);
 
 // Create User
-router.post("/", createUser);
+router.post("/", checkAuth, createUser);
 
 // Update user
-router.put("/:id", updateUser);
+router.put("/:id", checkAuth, updateUser);
 
 // Delete user
-router.delete("/:id", deleteUser);
+router.delete("/:id", checkAuth, deleteUser);
 
 // Add debt to user
-router.put("/:id/add-debt", addUserDebt);
+router.put("/:id/add-debt", checkAuth, addUserDebt);
 
 // Subtract debt from user
-router.put("/:id/subtract-debt", subtractUserDebt);
+router.put("/:id/subtract-debt", checkAuth, subtractUserDebt);
 
 module.exports = router;
