@@ -1,11 +1,33 @@
 const productService = require("../services/productService.js");
+<<<<<<< HEAD
 const { customResponse } = require("../helpers/objectDataResponse.js")
 const { uploadImage, deleteImage } = require("../helpers/cloudinary.js")
+=======
+const logService = require("../services/logService.js");
+const { customResponse } = require("../../helpers/objectDataResponse.js")
+const { uploadImage, deleteImage } = require("../../helpers/cloudinary.js")
+>>>>>>> feature/logs
 const fs = require("fs-extra");
 
 const createProductController = async (req, res) => {
   try {
-    const productData = req.body
+    
+    const {
+      name,
+      description,
+      price,
+      stock,
+      status,
+      createdBy
+    } = req.body;
+
+    const productData = {}
+    if(name) productData.name = name;
+    if(description) productData.description = description;
+    if(price) productData.price = Number(price);
+    if(stock) productData.stock = Number(stock);
+    if(status) productData.status = status;
+  
 
     let imageData = {
       url: "",
@@ -34,7 +56,9 @@ const createProductController = async (req, res) => {
       await fs.remove(req.files.image.tempFilePath);
     }
 
+    
     const newProduct = await productService.createProduct(productData)
+    await logService.createLog(createdBy, "Crear producto", `Producto ${name} creado`)
     customResponse(res, 201, newProduct, "Ok")
   } catch (error) {
     customResponse(res, 500, error, "Error al crear el producto")
@@ -74,11 +98,21 @@ const getAllProductsController = async (req, res) => {
 const updateProductController = async (req, res) => {
   try {
     const { id } = req.params
-    const productData = {...req.body};
+    const {
+      name,
+      description,
+      price,
+      stock,
+      status,
+      updatedBy
+    } = req.body;
+    const productData = {};
 
-    //Convertir price y stock a números si vienen en el body
-    if (productData.price) productData.price = Number(productData.price);
-    if (productData.stock) productData.stock = Number(productData.stock);
+    if (name) productData.name = name;
+    if (description) productData.description = description;
+    if (price !== undefined) productData.price = Number(price);
+    if (stock !== undefined) productData.stock = Number(stock);
+    if (status) productData.status = status;
 
     const existingProduct = await productService.getProductById(id)
     if (!existingProduct) {
@@ -108,6 +142,7 @@ const updateProductController = async (req, res) => {
       await fs.remove(req.files.image.tempFilePath);
     }
     const updatedProduct = await productService.updateProduct(id, productData)
+    await logService.createLog(updatedBy, "Actualizar producto", `Producto ${updatedProduct.name} actualizado`)
     customResponse(res, 200, updatedProduct, "Ok")
   } catch (error) {
     customResponse(res, 500, error, "Error al actualizar el producto")
@@ -117,10 +152,19 @@ const updateProductController = async (req, res) => {
 const deleteProductController = async (req, res) => {
   try {
     const { id } = req.params
+    const { deletedBy } = req.body
+
+    getProduct = await productService.getProductById(id)
+    if (!getProduct) {
+      return customResponse(res, 404, null, "Producto no encontrado")
+    }
+    
     const deletedProduct = await productService.deleteProduct(id)
+    await logService.createLog(deletedBy, "Eliminar producto", `Producto ${getProduct.name} eliminado`)
     customResponse(res, 200, deletedProduct, "Ok")
   } catch (error) {
     customResponse(res, 500, error, "Error al eliminar el producto")
+    throw new Error(error.message)
   }
 }
 
