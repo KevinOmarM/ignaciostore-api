@@ -17,11 +17,14 @@ const productSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  imageURL: {
-    type: String,
+  image: {
+    url: String,
+    public_id: String,
   },
   status: {
     type: String,
+    enum: ["active", "inactive"],
+    default: "active",
   },
 });
 
