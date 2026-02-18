@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const checkAuth = require("../../middlewares/checkAuth");
+const { checkAuth } = require("../../middleware/auth.js");
 
 const {
   getAllUsers,
@@ -10,7 +10,7 @@ const {
   deleteUser,
   addUserDebt,
   subtractUserDebt,
-} = require("../../controllers/user.controller"); 
+} = require("../../controllers/user.controller.js"); 
 
 // Get all users (paginated)
 router.get("/", checkAuth, getAllUsers);

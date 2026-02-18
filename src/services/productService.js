@@ -1,5 +1,6 @@
 const productModel = require("../models/productModel.js")
 const { default: mongoose } = require("mongoose")
+const BuyLogsService = require("./buyLogs.js")
 
 class productService {
 
@@ -62,6 +63,43 @@ class productService {
             throw new Error("Error al eliminar el producto: " + error.message)
         }
     }
+
+    async buyProduct(id, userId){
+        try {
+
+            const product = await productModel.findOneAndUpdate(
+                {
+                    _id: id,
+                    status: { $ne: "blocked" },
+                    stock: { $gt: 0 }
+                },
+                {
+                    $inc: { stock: -1 }
+                },
+                { new: true }
+            )
+
+            if (!product){
+                throw new Error("Producto no disponible o sin stock")
+            }
+
+            await BuyLogsService.createLog({
+                id_user: userId,
+                products: [{
+                    id: product._id,
+                    name: product.name,
+                    price: product.price
+                }]
+            })
+
+            return product
+
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error al comprar el producto: " + error.message)
+        }
+    }
+
 }
 
 module.exports = new productService()

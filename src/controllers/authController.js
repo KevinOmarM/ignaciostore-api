@@ -1,5 +1,5 @@
 const authService = require("../services/auth")
-const { customResponse } = require("../../helpers/objectDataResponse")
+const { customResponse } = require("../helpers/objectDataResponse")
 
 const loginController = async (req, res) => {
     try {

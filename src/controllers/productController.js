@@ -1,6 +1,6 @@
 const productService = require("../services/productService.js");
-const { customResponse } = require("../../helpers/objectDataResponse.js")
-const { uploadImage, deleteImage } = require("../../helpers/cloudinary.js")
+const { customResponse } = require("../helpers/objectDataResponse.js")
+const { uploadImage, deleteImage } = require("../helpers/cloudinary.js")
 const fs = require("fs-extra");
 
 const createProductController = async (req, res) => {
@@ -124,11 +124,23 @@ const deleteProductController = async (req, res) => {
   }
 }
 
+const buyProductController = async (req, res) => {
+  try {
+    const { id } = req.params
+    const userId = req.user.userId
+    const product = await productService.buyProduct(id, userId)
+    customResponse(res, 200, product, "Ok")
+  } catch (error) {
+    customResponse(res, 500, error, "Error al comprar el producto")
+  }
+}
+
 module.exports = {
   createProductController,
   getAllProductsController,
   getProductByIdController,
   getProductByName,
   updateProductController,
-  deleteProductController
+  deleteProductController,
+  buyProductController
 }
