@@ -64,41 +64,62 @@ class productService {
         }
     }
 
-    async buyProduct(id, userId){
+    async buyProducts(products, userId) {
+
+        const session = await mongoose.startSession()
+        session.startTransaction()
+
         try {
 
-            const product = await productModel.findOneAndUpdate(
-                {
-                    _id: id,
-                    status: { $ne: "blocked" },
-                    stock: { $gt: 0 }
-                },
-                {
-                    $inc: { stock: -1 }
-                },
-                { new: true }
-            )
+            const updatedProducts = []
 
-            if (!product){
-                throw new Error("Producto no disponible o sin stock")
+            for (const item of products) {
+
+                const { id, quantity } = item
+
+                if (!quantity || quantity <= 0)
+                    throw new Error("Cantidad inválida")
+
+                const product = await productModel.findOneAndUpdate(
+                    {
+                        _id: id,
+                        status: { $ne: "blocked" },
+                        stock: { $gte: quantity }
+                    },
+                    { $inc: { stock: -quantity } },
+                    { new: true, session }
+                )
+
+                if (!product)
+                    throw new Error(`Producto sin stock: ${id}`)
+
+                updatedProducts.push({
+                    id: product._id,
+                    name: product.name,
+                    price: product.price,
+                    quantity
+                })
             }
 
             await BuyLogsService.createLog({
                 id_user: userId,
-                products: [{
-                    id: product._id,
-                    name: product.name,
-                    price: product.price
-                }]
-            })
+                products: updatedProducts
+            }, session)
 
-            return product
+            await session.commitTransaction()
+            session.endSession()
+
+            return updatedProducts
 
         } catch (error) {
-            console.log(error)
-            throw new Error("Error al comprar el producto: " + error.message)
+
+            await session.abortTransaction()
+            session.endSession()
+
+            throw new Error("Error al comprar productos: " + error.message)
         }
     }
+
 
 }
 

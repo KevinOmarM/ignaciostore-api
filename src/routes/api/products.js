@@ -7,7 +7,7 @@ const {
     getProductByName,
     updateProductController,
     deleteProductController,
-    buyProductController
+    buyProductsController
 
 } = require("../../controllers/productController");
 
@@ -18,6 +18,6 @@ router.get("/search/:name", checkAuth, getProductByName);
 router.post("/", checkAuth, createProductController);
 router.put("/:id", checkAuth, updateProductController);
 router.delete("/:id", checkAuth, deleteProductController);
-router.post("/buy/:id", checkAuth, buyProductController);
+router.post("/buy", checkAuth, buyProductsController);
 
 module.exports = router;

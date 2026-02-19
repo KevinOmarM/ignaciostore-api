@@ -163,16 +163,25 @@ const deleteProductController = async (req, res) => {
   }
 }
 
-const buyProductController = async (req, res) => {
+const buyProductsController = async (req, res) => {
   try {
-    const { id } = req.params
+
     const userId = req.user.userId
-    const product = await productService.buyProduct(id, userId)
-    customResponse(res, 200, product, "Ok")
+    const { products } = req.body
+
+    if (!products || !Array.isArray(products) || products.length === 0)
+      return customResponse(res, 400, null, "Lista de productos inválida")
+
+    const result = await productService.buyProducts(products, userId)
+
+    customResponse(res, 200, result, "Compra realizada")
+
   } catch (error) {
-    customResponse(res, 500, error, "Error al comprar el producto")
+    customResponse(res, 500, error.message, "Error al comprar")
   }
 }
+
+
 
 module.exports = {
   createProductController,
@@ -181,5 +190,5 @@ module.exports = {
   getProductByName,
   updateProductController,
   deleteProductController,
-  buyProductController
+  buyProductsController
 }
