@@ -14,7 +14,7 @@ const createLog = async (req, res) => {
 
 const getLogs = async (req, res) => {
     try {
-        const logs = await buyLogsService.getLogs()
+        const logs = await buyLogsService.getAllLogs()
         customResponse(res, 200, logs, "Registros de compras obtenidos exitosamente")
     } catch (error) {
         customResponse(res, 500, null, "Error obteniendo los registros de compras")
