@@ -15,9 +15,17 @@ class productService {
         }
     }
 
-    async getAllProducts(){
+    async getAllProducts(page = 1, limit = 10) {
         try {
-            const products = await productModel.find().select("-createdAt -updatedAt -__v")
+
+            const options = {
+                page: parseInt(page, 10),
+                limit : parseInt(limit, 10),
+                select: "-createdAt -updatedAt -__v",
+                sort: { name: 1 },
+                collation: { locale: "es", strength: 1 }
+            }
+            const products = await productModel.paginate({}, options)
             return products
         } catch (error) {
             throw new Error("Error al obtener los productos: " + error.message)
