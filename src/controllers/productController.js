@@ -63,7 +63,8 @@ const createProductController = async (req, res) => {
 
 const getAllProductsController = async (req, res) => {
     try {
-      const products = await productService.getAllProducts()
+      const {page = 1, limit = 10} = req.query
+      const products = await productService.getAllProducts(page, limit)
       customResponse(res, 200, products, "Ok")
     } catch (error) {
       customResponse(res, 500, error, "Error al obtener los productos")
