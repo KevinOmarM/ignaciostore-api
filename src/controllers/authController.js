@@ -12,7 +12,7 @@ const loginController = async (req, res) => {
         }
         const result = await authService.login(username, password)
         await logService.createLog(user.id, "Iniciar sesión", `Usuario ${user.username} inició sesión`)
-        customResponse(res, 200, "Ok", result)
+        customResponse(res, 200, result, "Ok")
     } catch (error) {
         customResponse(res, 500, "Error al iniciar sesion", null, error.message)
         throw new Error(error.message)
