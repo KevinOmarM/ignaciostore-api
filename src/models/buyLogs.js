@@ -8,7 +8,8 @@ const buysLogsSchema = new mongoose.Schema({
     products: [{
         id: mongoose.Schema.Types.ObjectId,
         name: String,
-        price: Number
+        price: Number,
+        quantity: Number
     }]
 
 }, {

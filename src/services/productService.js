@@ -105,7 +105,7 @@ class productService {
                     id: product._id,
                     name: product.name,
                     price: product.price,
-                    quantity
+                    quantity: quantity
                 })
             }
 
