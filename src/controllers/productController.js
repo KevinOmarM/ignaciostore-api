@@ -3,6 +3,7 @@ const { customResponse } = require("../helpers/objectDataResponse.js")
 const { uploadImage, deleteImage } = require("../helpers/cloudinary.js")
 const logService = require("../services/logService.js");
 const fs = require("fs-extra");
+const mongoose = require("mongoose")
 
 const createProductController = async (req, res) => {
   try {
@@ -15,6 +16,8 @@ const createProductController = async (req, res) => {
       status,
       createdBy
     } = req.body;
+    console.log("createdBy recibido:", createdBy);
+    const author = new mongoose.Types.ObjectId(createdBy)
 
     const productData = {}
     if(name) productData.name = name;
@@ -22,6 +25,8 @@ const createProductController = async (req, res) => {
     if(price) productData.price = Number(price);
     if(stock) productData.stock = Number(stock);
     if(status) productData.status = status;
+
+    
   
 
     let imageData = {
@@ -53,7 +58,7 @@ const createProductController = async (req, res) => {
 
     
     const newProduct = await productService.createProduct(productData)
-    await logService.createLog(createdBy, "Crear producto", `Producto ${name} creado`)
+    await logService.createLog(author, "Crear producto", `Producto ${name} creado`)
     customResponse(res, 201, newProduct, "Ok")
   } catch (error) {
     customResponse(res, 500, error, "Error al crear el producto")
@@ -100,7 +105,6 @@ const updateProductController = async (req, res) => {
       price,
       stock,
       status,
-      updatedBy
     } = req.body;
     const productData = {};
 
@@ -109,6 +113,9 @@ const updateProductController = async (req, res) => {
     if (price !== undefined) productData.price = Number(price);
     if (stock !== undefined) productData.stock = Number(stock);
     if (status) productData.status = status;
+
+    const author = req.user?.id
+    const updatedBy = new mongoose.Types.ObjectId(author)
 
     const existingProduct = await productService.getProductById(id)
     if (!existingProduct) {
@@ -138,7 +145,13 @@ const updateProductController = async (req, res) => {
       await fs.remove(req.files.image.tempFilePath);
     }
     const updatedProduct = await productService.updateProduct(id, productData)
-    await logService.createLog(updatedBy, "Actualizar producto", `Producto ${updatedProduct.name} actualizado`)
+
+    try{
+      await logService.createLog(updatedBy, "Actualizar producto", `Producto ${updatedProduct.name} actualizado`)
+
+    } catch (error){
+      console.error("Error al crear log de actualización de producto:", error.message);
+    }
     customResponse(res, 200, updatedProduct, "Ok")
   } catch (error) {
     customResponse(res, 500, error, "Error al actualizar el producto")
@@ -148,12 +161,19 @@ const updateProductController = async (req, res) => {
 const deleteProductController = async (req, res) => {
   try {
     const { id } = req.params
-    const { deletedBy } = req.body
+
 
     getProduct = await productService.getProductById(id)
     if (!getProduct) {
       return customResponse(res, 404, null, "Producto no encontrado")
     }
+
+    if(getProduct.status === "blocked") {
+      return customResponse(res, 400, null, "El producto ya está eliminado")
+    }
+
+    const author = req.user?.id
+    const deletedBy = new mongoose.Types.ObjectId(author)
     
     const deletedProduct = await productService.deleteProduct(id)
     await logService.createLog(deletedBy, "Eliminar producto", `Producto ${getProduct.name} eliminado`)
