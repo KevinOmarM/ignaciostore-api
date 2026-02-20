@@ -43,10 +43,17 @@ const getLogsByUserId = async (req, res) => {
 
 const downloadMonthlyReport = async (req, res) => {
     try {
-
         const { month, year } = req.params
 
         const logs = await buyLogsService.getMonthlyLogs(month, year)
+        console.log("LOGS:", logs)
+
+        if (!logs || logs.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No hay compras en ese mes"
+            })
+        }
 
         const workbook = await generateMonthlyExcel(logs)
 
@@ -68,6 +75,7 @@ const downloadMonthlyReport = async (req, res) => {
         customResponse(res, 500, null, "Error descargando el reporte mensual")
     }
 }
+
 
 module.exports = {
     createLog,

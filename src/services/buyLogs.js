@@ -31,7 +31,7 @@ class BuyLogsService {
 
     async getLogByUserId(userId){
         try {
-            const log = await buyLogsModel.findByUserId(userId)
+            const log = await buyLogsModel.find({ id_user: userId })
             return log
         } catch (error) {
             throw new Error("Error obteniendo el registro de compra")
