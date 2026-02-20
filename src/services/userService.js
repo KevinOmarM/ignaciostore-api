@@ -160,6 +160,7 @@ const addUserDebtService = async (id, amount) => {
     if (!user) {
       throw new Error("Usuario no encontrado");
     }
+    
     const newDebt = user.debt + amount;
     if (newDebt < 0) {
       throw new Error("La deuda no puede ser negativa");

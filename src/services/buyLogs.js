@@ -55,16 +55,16 @@ class BuyLogsService {
                 query.createdAt = {}
 
                 if (hasFrom) {
-                    const start = new Date(from)
-                    start.setHours(0, 0, 0, 0)
+                    // crea fecha en formato local YYYY-MM-DD + hora 00:00:00
+                    const start = new Date(from + 'T00:00:00')
                     if (!Number.isNaN(start.getTime())) {
                         query.createdAt.$gte = start
                     }
                 }
 
                 if (hasTo) {
-                    const end = new Date(to)
-                    end.setHours(23, 59, 59, 999)
+                    // crea fecha en formato local YYYY-MM-DD + hora 23:59:59
+                    const end = new Date(to + 'T23:59:59.999')
                     if (!Number.isNaN(end.getTime())) {
                         query.createdAt.$lte = end
                     }
@@ -137,16 +137,16 @@ class BuyLogsService {
                 query.createdAt = {}
 
                 if (hasFrom) {
-                    const start = new Date(from)
-                    start.setHours(0, 0, 0, 0)
+                    // crea fecha en formato local YYYY-MM-DD + hora 00:00:00
+                    const start = new Date(from + 'T00:00:00')
                     if (!Number.isNaN(start.getTime())) {
                         query.createdAt.$gte = start
                     }
                 }
 
                 if (hasTo) {
-                    const end = new Date(to)
-                    end.setHours(23, 59, 59, 999)
+                    // crea fecha en formato local YYYY-MM-DD + hora 23:59:59
+                    const end = new Date(to + 'T23:59:59.999')
                     if (!Number.isNaN(end.getTime())) {
                         query.createdAt.$lte = end
                     }

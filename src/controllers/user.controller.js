@@ -209,7 +209,7 @@ const deleteUser = async (req, res) => {
     return customResponse(res, 500, null, "Error interno del servidor");
   }
 };
-
+//Esto sirve para la parte de deuda del userz
 const addUserDebt = async (req, res) => {
   try {
     const { id } = req.params;
