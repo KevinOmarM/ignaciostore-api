@@ -111,7 +111,8 @@ const updateUser = async (req, res) => {
       );
     }
 
-    const { firstName, lastName, username, password, role, debt } = req.body;
+    const { firstName, lastName, username, password, role, debt, status } =
+      req.body;
 
     const updateData = {};
     if (firstName) updateData.firstName = firstName;
@@ -124,6 +125,7 @@ const updateUser = async (req, res) => {
     }
     if (role) updateData.role = role;
     if (debt !== undefined) updateData.debt = debt;
+    if (status !== undefined) updateData.status = status;
 
     // Revisamos si hay al menos un campo o imagen para actualizar
     if (Object.keys(updateData).length === 0 && !req.files?.image) {
@@ -183,11 +185,17 @@ const deleteUser = async (req, res) => {
     const author = req.user?.id;
     const deletedBy = new mongoose.Types.ObjectId(author);
 
-    await logService.createLog(
-      deletedBy,
-      "Eliminar usuario",
-      `Usuario ${user.username} eliminado`,
-    );
+    console.log(deletedBy);
+
+    try {
+      await logService.createLog(
+        deletedBy,
+        "Eliminar usuario",
+        `Usuario ${user.username} eliminado`,
+      );
+    } catch (logError) {
+      console.error("Error al crear log de eliminación:", logError.message);
+    }
 
     return customResponse(
       res,
