@@ -1,7 +1,7 @@
 const { customResponse } = require("../helpers/objectDataResponse");
-const { 
-  getAllUsersService, 
-  getUserByIdService, 
+const {
+  getAllUsersService,
+  getUserByIdService,
   createUserService,
   updateUserService,
   deleteUserService,
@@ -9,8 +9,9 @@ const {
   subtractUserDebtService,
   getUserByUsernameService,
 } = require("../services/userService");
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 const logService = require("../services/logService.js");
+const mongoose = require("mongoose");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -50,11 +51,14 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { firstName, lastName, username, password, role, debt, createdBy } = req.body;
+    const { firstName, lastName, username, password, role, debt } = req.body;
 
     if (!firstName || !lastName || !username || !password) {
       return customResponse(res, 400, null, "Faltan campos obligatorios");
     }
+
+    author = req.user?.id;
+    const createdBy = new mongoose.Types.ObjectId(author);
 
     const existingUser = await getUserByUsernameService(username);
 
@@ -62,7 +66,6 @@ const createUser = async (req, res) => {
       return customResponse(res, 400, null, "El usuario ya existe");
     }
 
-    
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -74,11 +77,15 @@ const createUser = async (req, res) => {
       username,
       password: hashedPassword,
       role,
-      debt
+      debt,
     });
 
     console.log(newUser);
-    await logService.createLog(createdBy, "Crear usuario", `Usuario ${username} creado`);
+    await logService.createLog(
+      createdBy,
+      "Crear usuario",
+      `Usuario ${username} creado`,
+    );
     return customResponse(res, 201, newUser, "Usuario creado exitosamente");
   } catch (error) {
     console.error("Error en createUser controller:", error.message);
@@ -96,24 +103,25 @@ const updateUser = async (req, res) => {
     const { id } = req.params;
 
     if (Object.keys(req.body).length === 0) {
-      return customResponse(res, 400, null, 'Debe proporcionar al menos un campo para actualizar');
+      return customResponse(
+        res,
+        400,
+        null,
+        "Debe proporcionar al menos un campo para actualizar",
+      );
     }
 
-    const {
-      firstName,
-      lastName,
-      username,
-      password,
-      role,
-      debt,
-      updatedBy
-    } = req.body;
+    const { firstName, lastName, username, password, role, debt } = req.body;
 
     const updateData = {};
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
     if (username) updateData.username = username;
-    if (password) updateData.password = password;
+    if (password) {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      updateData.password = hashedPassword;
+    }
     if (role) updateData.role = role;
     if (debt !== undefined) updateData.debt = debt;
 
@@ -123,19 +131,25 @@ const updateUser = async (req, res) => {
         res,
         400,
         null,
-        "Debe proporcionar al menos un campo para actualizar"
+        "Debe proporcionar al menos un campo para actualizar",
       );
     }
+    author = req.user?.id;
+    const updatedBy = new mongoose.Types.ObjectId(author);
 
     const updatedUser = await updateUserService(id, updateData);
 
-    await logService.createLog(updatedBy, "Actualizar usuario", `Usuario ${updatedUser.username} actualizado`);
+    await logService.createLog(
+      updatedBy,
+      "Actualizar usuario",
+      `Usuario ${updatedUser.username} actualizado`,
+    );
 
     return customResponse(
       res,
       200,
       updatedUser,
-      "Usuario actualizado exitosamente"
+      "Usuario actualizado exitosamente",
     );
   } catch (error) {
     console.error("Error en updateUser controller:", error.message);
@@ -156,21 +170,30 @@ const updateUser = async (req, res) => {
   }
 };
 
-
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { deletedBy } = req.body;
     const user = await getUserByIdService(id);
+
+    if (user.status === "inactive") {
+      return customResponse(res, 400, null, "El usuario ya está desactivado");
+    }
     const deletedUser = await deleteUserService(id);
 
-    await logService.createLog(deletedBy, "Eliminar usuario", `Usuario ${user.username} eliminado`);
+    const author = req.user?.id;
+    const deletedBy = new mongoose.Types.ObjectId(author);
+
+    await logService.createLog(
+      deletedBy,
+      "Eliminar usuario",
+      `Usuario ${user.username} eliminado`,
+    );
 
     return customResponse(
       res,
       200,
       deletedUser,
-      "Usuario desactivado exitosamente"
+      "Usuario desactivado exitosamente",
     );
   } catch (error) {
     console.error("Error en deleteUser controller:", error.message);
@@ -199,12 +222,7 @@ const addUserDebt = async (req, res) => {
 
     await addUserDebtService(id, amount);
 
-    return customResponse(
-      res,
-      200,
-      null,
-      "Deuda agregada correctamente"
-    );
+    return customResponse(res, 200, null, "Deuda agregada correctamente");
   } catch (error) {
     console.error("Error en addUserDebt controller:", error.message);
 
@@ -232,14 +250,13 @@ const subtractUserDebt = async (req, res) => {
 
     await subtractUserDebtService(id, amount);
 
-    await logService.createLog(subtractedBy, "Pagar deuda", `Usuario ${user.username} tiene ahora deuda de $${user.debt}`);
-
-    return customResponse(
-      res,
-      200,
-      null,
-      "Deuda restada correctamente"
+    await logService.createLog(
+      subtractedBy,
+      "Pagar deuda",
+      `Usuario ${user.username} tiene ahora deuda de $${user.debt}`,
     );
+
+    return customResponse(res, 200, null, "Deuda restada correctamente");
   } catch (error) {
     console.error("Error en subtractUserDebt controller:", error.message);
 
@@ -254,8 +271,6 @@ const subtractUserDebt = async (req, res) => {
     return customResponse(res, 500, null, "Error interno del servidor");
   }
 };
-
-
 
 module.exports = {
   getAllUsers,

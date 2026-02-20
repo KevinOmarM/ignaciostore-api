@@ -56,7 +56,11 @@ class productService {
 
     async updateProduct(id, productData){
         try {
-            const updatedProduct = await productModel.findByIdAndUpdate(id, productData, {new: true})
+
+            Object.keys(productData).forEach(key => {
+                if (productData[key] === undefined || productData[key] === null) delete productData[key];
+            });
+            const updatedProduct = await productModel.findByIdAndUpdate(id, productData, {returnDocument: "after"})
             return updatedProduct
         } catch (error) {
             throw new Error("Error al actualizar el producto: " + error.message)

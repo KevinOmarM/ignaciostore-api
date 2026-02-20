@@ -6,7 +6,7 @@ const getAllUsersService = async ({ page = 1, limit = 10 }) => {
     const options = {
       page,
       limit,
-      select: "firstName lastName role debt status",
+      select: "firstName lastName username role debt status",
     };
 
     const result = await userModel.paginate({}, options);
@@ -25,7 +25,7 @@ const getUserByIdService = async (id) => {
 
     const user = await userModel
       .findById(id)
-      .select("firstName lastName role debt status createdAt updatedAt");
+      .select("firstName lastName username password role debt status");
 
     if (!user) {
       throw new Error("Usuario no encontrado");
@@ -37,7 +37,14 @@ const getUserByIdService = async (id) => {
   }
 };
 
-const createUserService = async ({ firstName, lastName, username, password, role = "user", debt = 0 }) => {
+const createUserService = async ({
+  firstName,
+  lastName,
+  username,
+  password,
+  role = "user",
+  debt = 0,
+}) => {
   try {
     const existingUser = await userModel.findOne({ username });
 
@@ -59,7 +66,9 @@ const createUserService = async ({ firstName, lastName, username, password, role
     // Retornar sin contraseña
     const userResponse = await userModel
       .findById(newUser._id)
-      .select("firstName lastName username role debt status createdAt updatedAt");
+      .select(
+        "firstName lastName username role debt status createdAt updatedAt",
+      );
 
     return userResponse;
   } catch (error) {
@@ -69,14 +78,21 @@ const createUserService = async ({ firstName, lastName, username, password, role
 
 const updateUserService = async (id, updateData) => {
   try {
-
     //validate user ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("ID inválido");
     }
 
-    //Filter and validate only update allowed fields 
-    const allowedFields = ["firstName", "lastName", "username", "password", "role", "status"];
+    //Filter and validate only update allowed fields
+    const allowedFields = [
+      "firstName",
+      "lastName",
+      "username",
+      "password",
+      "role",
+      "status",
+      "debt",
+    ];
     const filteredData = {};
 
     Object.keys(updateData).forEach((key) => {
@@ -89,90 +105,92 @@ const updateUserService = async (id, updateData) => {
       throw new Error("No hay campos válidos para actualizar");
     }
 
-        const updatedUser = await userModel
+    const updatedUser = await userModel
       .findByIdAndUpdate(id, filteredData, {
         new: true,
         runValidators: true,
       })
-      .select("firstName lastName username password role status createdAt updatedAt");
+      .select(
+        "firstName lastName username password role status createdAt updatedAt",
+      );
 
     if (!updatedUser) {
       throw new Error("Usuario no encontrado");
     }
 
     return updatedUser;
-
   } catch (error) {
     throw new Error(`Error actualizando usuario: ${error.message}`);
   }
 };
 
 const deleteUserService = async (id) => {
-    try {
-        //validate user ID
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            throw new Error("ID inválido");
-        }
+  try {
+    const isDeleted = await userModel.findById(id);
 
-        const deletedUser = await userModel.findByIdAndUpdate(
-            id,
-            { status: "inactive" },
-            { new: true }
-        );
-
-        if (!deletedUser) {
-            throw new Error("Usuario no encontrado");
-        }
-
-        return deletedUser;
-    } catch (error) {
-        throw new Error(`Error eliminando usuario: ${error.message}`);
+    if (!isDeleted) {
+      throw new Error("Usuario no encontrado");
     }
+
+    const deletedUser = await userModel.findByIdAndUpdate(
+      id,
+      { status: "inactive" },
+      { new: true },
+    );
+
+    if (!deletedUser) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    return deletedUser;
+  } catch (error) {
+    throw new Error(`Error eliminando usuario: ${error.message}`);
+  }
 };
 
 const addUserDebtService = async (id, amount) => {
-    try {
-        //validate Id
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            throw new Error("ID inválido");
-        }
-
-        const user = await userModel.findById(id);
-
-        if (!user) {
-            throw new Error("Usuario no encontrado");
-        }
-        const newDebt = user.debt + amount;
-        if (newDebt < 0) {
-            throw new Error("La deuda no puede ser negativa");
-        }
-
-        user.debt = newDebt;
-        await user.save();
-    } catch (error) {
-        throw new Error(`Error agregando deuda al usuario: ${error.message}`);
+  try {
+    //validate Id
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new Error("ID inválido");
     }
-}
+
+    const user = await userModel.findById(id);
+
+    if (!user) {
+      throw new Error("Usuario no encontrado");
+    }
+    const newDebt = user.debt + amount;
+    if (newDebt < 0) {
+      throw new Error("La deuda no puede ser negativa");
+    }
+
+    user.debt = newDebt;
+    await user.save();
+  } catch (error) {
+    throw new Error(`Error agregando deuda al usuario: ${error.message}`);
+  }
+};
 
 const subtractUserDebtService = async (id, amount) => {
-        try {
-        //validate Id
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            throw new Error("ID inválido");
-        }
-
-        const user = await userModel.findById(id);
-
-        if (!user) {
-            throw new Error("Usuario no encontrado");
-        }
-
-        user.debt -= amount;
-
-        await user.save();
-    } catch (error) {
-        throw new Error(`Error restando deuda al usuario: ${error.message}`);
+  try {
+    //validate Id
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new Error("ID inválido");
     }
+
+    const user = await userModel.findById(id);
+
+    if (!user) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    user.debt -= amount;
+
+    await user.save();
+  } catch (error) {
+    throw new Error(`Error restando deuda al usuario: ${error.message}`);
+  }
 };
 
 const getUserByUsernameService = async (username) => {
@@ -187,12 +205,12 @@ const getUserByUsernameService = async (username) => {
 };
 
 module.exports = {
-    getAllUsersService,
-    getUserByIdService,
-    createUserService,
-    updateUserService,
-    deleteUserService,
-    addUserDebtService,
-    subtractUserDebtService,
-    getUserByUsernameService,
+  getAllUsersService,
+  getUserByIdService,
+  createUserService,
+  updateUserService,
+  deleteUserService,
+  addUserDebtService,
+  subtractUserDebtService,
+  getUserByUsernameService,
 };
