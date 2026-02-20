@@ -13,7 +13,7 @@ class BuyLogsService {
 
     async getAllLogs(){
         try {
-            const logs = await buyLogsModel.findAll()
+            const logs = await buyLogsModel.find()
             return logs
         } catch (error) {
             throw new Error("Error obteniendo los registros de compra")
@@ -29,10 +29,58 @@ class BuyLogsService {
         }
     }
 
-    async getLogByUserId(userId){
+    async getLogByUserId(userId, page = 1, limit = 10, from = "", to = ""){
         try {
-            const log = await buyLogsModel.find({ id_user: userId })
-            return log
+            const safePage = Number(page) > 0 ? Number(page) : 1
+            const safeLimit = Number(limit) > 0 ? Number(limit) : 10
+            const query = { id_user: userId }
+
+            const hasFrom = String(from || "").trim()
+            const hasTo = String(to || "").trim()
+
+            if (hasFrom || hasTo) {
+                query.createdAt = {}
+
+                if (hasFrom) {
+                    const start = new Date(from)
+                    start.setHours(0, 0, 0, 0)
+                    if (!Number.isNaN(start.getTime())) {
+                        query.createdAt.$gte = start
+                    }
+                }
+
+                if (hasTo) {
+                    const end = new Date(to)
+                    end.setHours(23, 59, 59, 999)
+                    if (!Number.isNaN(end.getTime())) {
+                        query.createdAt.$lte = end
+                    }
+                }
+
+                if (!query.createdAt.$gte && !query.createdAt.$lte) {
+                    delete query.createdAt
+                }
+            }
+
+            const totalDocs = await buyLogsModel.countDocuments(query)
+            const totalPages = Math.max(1, Math.ceil(totalDocs / safeLimit))
+            const skip = (safePage - 1) * safeLimit
+
+            const docs = await buyLogsModel
+                .find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(safeLimit)
+
+            return {
+                docs,
+                totalDocs,
+                limit: safeLimit,
+                page: safePage,
+                totalPages,
+                hasPrevPage: safePage > 1,
+                hasNextPage: safePage < totalPages
+            }
         } catch (error) {
             throw new Error("Error obteniendo el registro de compra")
         }
