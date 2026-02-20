@@ -5,6 +5,15 @@ const buysLogsSchema = new mongoose.Schema({
         ref: "User",
         required: true
     },
+    totalCost: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    isPaid: {
+        type: Boolean,
+        default: false
+    },
     products: [{
         id: mongoose.Schema.Types.ObjectId,
         name: String,
@@ -16,5 +25,7 @@ const buysLogsSchema = new mongoose.Schema({
     timestamps: true,
     versionKey: false
 })
+
+buysLogsSchema.index({ isPaid: 1, createdAt: -1, id_user: 1 })
 
 module.exports = mongoose.model("BuyLogs", buysLogsSchema)

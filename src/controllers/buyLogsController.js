@@ -42,6 +42,26 @@ const getLogsByUserId = async (req, res) => {
     }
 }
 
+const getPendingLogs = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, from = "", to = "" } = req.query
+        const logs = await buyLogsService.getPendingLogs(page, limit, from, to)
+        customResponse(res, 200, logs, "Pendientes de pago obtenidos exitosamente")
+    } catch (error) {
+        customResponse(res, 500, null, "Error obteniendo pendientes de pago")
+    }
+}
+
+const markPurchaseAsPaid = async (req, res) => {
+    try {
+        const { id } = req.params
+        const updatedLog = await buyLogsService.markLogAsPaid(id)
+        customResponse(res, 200, updatedLog, "Compra marcada como pagada")
+    } catch (error) {
+        customResponse(res, 500, null, error.message || "Error marcando compra como pagada")
+    }
+}
+
 const downloadMonthlyReport = async (req, res) => {
     try {
 
@@ -75,5 +95,7 @@ module.exports = {
     getLogs,
     getLogsById,
     getLogsByUserId,
+    getPendingLogs,
+    markPurchaseAsPaid,
     downloadMonthlyReport
 }
