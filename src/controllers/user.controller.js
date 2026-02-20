@@ -69,8 +69,6 @@ const createUser = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    console.log("username:", username);
-
     const newUser = await createUserService({
       firstName,
       lastName,

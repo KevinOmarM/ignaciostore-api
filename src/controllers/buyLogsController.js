@@ -67,8 +67,6 @@ const downloadMonthlyReport = async (req, res) => {
         const { month, year } = req.params
 
         const logs = await buyLogsService.getMonthlyLogs(month, year)
-        console.log("LOGS:", logs)
-
         if (!logs || logs.length === 0) {
             return res.status(404).json({
                 success: false,

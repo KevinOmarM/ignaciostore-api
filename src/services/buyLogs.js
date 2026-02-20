@@ -1,7 +1,8 @@
 const buyLogsModel = require("../models/buyLogs")
+const userModel = require("../models/userModel")
 
 class BuyLogsService {
-    async createLog (logData){
+    async createLog (logData, session = null){
         try {
             const products = Array.isArray(logData.products) ? logData.products : []
             const calculatedTotal = products.reduce((sum, product) => {
@@ -16,10 +17,19 @@ class BuyLogsService {
                 isPaid: Boolean(logData.isPaid)
             }
 
-            await buyLogsModel.create(normalizedLogData)
+            await buyLogsModel.create([normalizedLogData], { session })
+
+            // Si isPaid es false  agregaremos la deuda al usuario
+            if (!normalizedLogData.isPaid && normalizedLogData.totalCost > 0) {
+                const updatedUser = await userModel.findByIdAndUpdate(
+                    normalizedLogData.id_user,
+                    { $inc: { debt: normalizedLogData.totalCost } },
+                    { new: true, session }
+                )
+            }
+
             return "Ok"
         } catch (error) {
-            console.error("ERROR REAL CREATE LOG:", error)
             throw new Error("Error creando el registro de compra")
         }
     }
