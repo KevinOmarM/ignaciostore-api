@@ -77,16 +77,10 @@ class productService {
     }
 
     async buyProducts(products, userId) {
-
-        const session = await mongoose.startSession()
-        session.startTransaction()
-
         try {
-
             const updatedProducts = []
 
             for (const item of products) {
-
                 const { id, quantity } = item
 
                 if (!quantity || quantity <= 0)
@@ -99,7 +93,7 @@ class productService {
                         stock: { $gte: quantity }
                     },
                     { $inc: { stock: -quantity } },
-                    { new: true, session }
+                    { new: true }
                 )
 
                 if (!product)
@@ -116,18 +110,10 @@ class productService {
             await BuyLogsService.createLog({
                 id_user: userId,
                 products: updatedProducts
-            }, session)
-
-            await session.commitTransaction()
-            session.endSession()
+            })
 
             return updatedProducts
-
         } catch (error) {
-
-            await session.abortTransaction()
-            session.endSession()
-
             throw new Error("Error al comprar productos: " + error.message)
         }
     }
