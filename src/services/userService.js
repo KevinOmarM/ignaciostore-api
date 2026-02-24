@@ -160,7 +160,7 @@ const addUserDebtService = async (id, amount) => {
     if (!user) {
       throw new Error("Usuario no encontrado");
     }
-    
+
     const newDebt = user.debt + amount;
     if (newDebt < 0) {
       throw new Error("La deuda no puede ser negativa");
@@ -208,6 +208,7 @@ const getUserByUsernameService = async (username) => {
 const getAllUsersNamesService = async () => {
   try {
     const users = await userModel
+      .find()
       .select("firstName lastName username")
       .sort({ firstName: 1, lastName: 1 })
       .lean();
@@ -220,7 +221,7 @@ const getAllUsersNamesService = async () => {
   } catch (error) {
     throw new Error(`Error obteniendo nombres de usuarios: ${error.message}`);
   }
-}
+};
 
 module.exports = {
   getAllUsersService,

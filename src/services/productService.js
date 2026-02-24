@@ -15,7 +15,7 @@ class productService {
         }
     }
 
-    async getAllProducts(page = 1, limit = 10) {
+    async getAllProducts(page = 1, limit = 10, includeBlocked = false) {
         try {
 
             const options = {
@@ -25,7 +25,11 @@ class productService {
                 sort: { name: 1 },
                 collation: { locale: "es", strength: 1 }
             }
-            const products = await productModel.paginate({}, options)
+            const query = includeBlocked
+                ? {}
+                : { status: { $ne: "blocked" } }
+
+            const products = await productModel.paginate(query, options)
             return products
         } catch (error) {
             throw new Error("Error al obtener los productos: " + error.message)
@@ -41,14 +45,23 @@ class productService {
         }
     }
 
-    async searchProductByName(name){
+    async searchProductByName(name, page = 1, limit = 10){
         try {
-            const product = await productModel.find({
-                $or: [
-                    { name: { $regex: name, $options: "i" } },
-                ]
-            }).collation({ locale: "es" , strength: 1}).select("-createdAt -updatedAt -__v")
-            return product
+            const query = {
+                name: { $regex: name, $options: "i" },
+                status: { $ne: "blocked" }
+            }
+
+            const options = {
+                page: parseInt(page, 10),
+                limit: parseInt(limit, 10),
+                select: "-createdAt -updatedAt -__v",
+                sort: { name: 1 },
+                collation: { locale: "es", strength: 1 }
+            }
+
+            const products = await productModel.paginate(query, options)
+            return products
         } catch (error) {
             throw new Error("Error al buscar el producto: " + error.message)
         }
