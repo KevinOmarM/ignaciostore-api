@@ -205,6 +205,23 @@ const getUserByUsernameService = async (username) => {
   }
 };
 
+const getAllUsersNamesService = async () => {
+  try {
+    const users = await userModel
+      .select("firstName lastName username")
+      .sort({ firstName: 1, lastName: 1 })
+      .lean();
+
+    return users.map((user) => ({
+      id: user._id,
+      fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+      username: user.username,
+    }));
+  } catch (error) {
+    throw new Error(`Error obteniendo nombres de usuarios: ${error.message}`);
+  }
+}
+
 module.exports = {
   getAllUsersService,
   getUserByIdService,
@@ -214,4 +231,5 @@ module.exports = {
   addUserDebtService,
   subtractUserDebtService,
   getUserByUsernameService,
+  getAllUsersNamesService,
 };

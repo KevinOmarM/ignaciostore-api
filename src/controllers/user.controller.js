@@ -1,4 +1,7 @@
 const { customResponse } = require("../helpers/objectDataResponse");
+const logService = require("../services/logService.js");
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 const {
   getAllUsersService,
   getUserByIdService,
@@ -8,10 +11,8 @@ const {
   addUserDebtService,
   subtractUserDebtService,
   getUserByUsernameService,
+  getAllUsersNamesService,
 } = require("../services/userService");
-const bcrypt = require("bcrypt");
-const logService = require("../services/logService.js");
-const mongoose = require("mongoose");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -23,6 +24,17 @@ const getAllUsers = async (req, res) => {
     return customResponse(res, 200, users, "Usuarios obtenidos exitosamente");
   } catch (error) {
     console.error("Error en getAllUsers controller:", error.message);
+    return customResponse(res, 500, null, "Error interno del servidor");
+  }
+};
+
+const getAllUsersNames = async (req, res) => {
+  try {
+    const users = await getAllUsersNamesService();
+
+    return customResponse(res, 200, users, "Usuarios obtenidos exitosamente");
+  } catch (error) {
+    console.error("Error en getAllUsersNames controller:", error.message);
     return customResponse(res, 500, null, "Error interno del servidor");
   }
 };
@@ -286,4 +298,5 @@ module.exports = {
   deleteUser,
   addUserDebt,
   subtractUserDebt,
+  getAllUsersNames,
 };
