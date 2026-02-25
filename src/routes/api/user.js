@@ -10,10 +10,14 @@ const {
   deleteUser,
   addUserDebt,
   subtractUserDebt,
+  getAllUsersNames,
 } = require("../../controllers/user.controller.js"); 
 
 // Get all users (paginated)
 router.get("/", checkAuth, getAllUsers);
+
+// Obtener todos los nombres de usuarios
+router.get("/names", checkAuth, getAllUsersNames);
 
 // Get user by ID
 router.get("/:id", checkAuth, getUserById);
@@ -32,5 +36,7 @@ router.put("/:id/add-debt", checkAuth, addUserDebt);
 
 // Subtract debt from user
 router.put("/:id/subtract-debt", checkAuth, subtractUserDebt);
+
+
 
 module.exports = router;

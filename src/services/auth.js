@@ -22,7 +22,7 @@ class authService {
                     role: userData.role
                 },
                 process.env.JWT_SECRET_KEY,
-                { expiresIn: "15min" }
+                { expiresIn: "1400min" }
             )
 
             return token

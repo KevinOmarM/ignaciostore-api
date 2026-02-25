@@ -12,8 +12,8 @@ const {
 } = require("../../controllers/productController");
 
 router.get("/", checkAuth, getAllProductsController);
-router.get("/:id", checkAuth, getProductByIdController);
 router.get("/search/:name", checkAuth, getProductByName);
+router.get("/:id", checkAuth, getProductByIdController);
 
 router.post("/", checkAuth, createProductController);
 router.put("/:id", checkAuth, updateProductController);
