@@ -1,7 +1,6 @@
 const ExcelJS = require("exceljs")
 
 async function generateMonthlyExcel(logs) {
-
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet("Compras")
 
@@ -13,9 +12,14 @@ async function generateMonthlyExcel(logs) {
     ]
 
     logs.forEach(log => {
+        // Verificar si id_user existe y tiene datos
+        const userName = log.id_user ? 
+            (log.id_user.name || log.id_user.username || "N/A") : 
+            "Usuario eliminado";
+
         log.products.forEach(product => {
             sheet.addRow({
-                user: log.id_user.name || log.id_user.username || "N/A",
+                user: userName,
                 product: product.name,
                 price: product.price,
                 date: log.createdAt.toISOString().split("T")[0]
