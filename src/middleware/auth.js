@@ -15,7 +15,10 @@ const checkAuth = (req, res, next) => {
         req.user = decoded
         next()
     } catch (error) {
-        return customResponse(res, 401, null, "Token inválido")
+        if (error.name === "TokenExpiredError") {
+            return customResponse(res, 401, null, "Sesión expirada");
+        }
+        return customResponse(res, 401, null, "Token inválido o malformado");
     }
 }
 

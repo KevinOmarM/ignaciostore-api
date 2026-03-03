@@ -96,6 +96,26 @@ const getAllProductsController = async (req, res) => {
     }
   }
 
+  const addProductToCart = async (req, res) => {
+    try {
+      const cartData = req.body
+      const cartProducts = await productService.addProductToCart(cartData)
+      customResponse(res, 200, cartProducts, "Ok")
+    } catch (error) {
+      customResponse(res, 500, error, "Error al agregar el producto al carrito")
+    }
+  }
+
+  const getCartProducts = async (req, res) => {
+    try {
+      const { userId } = req.params
+      const cartProducts = await productService.getCartProducts(userId)
+      customResponse(res, 200, cartProducts, "Ok")
+    } catch (error) {
+      customResponse(res, 500, error, "Error al obtener el carrito")
+    }
+  }
+
 const updateProductController = async (req, res) => {
   try {
     const { id } = req.params
@@ -158,6 +178,16 @@ const updateProductController = async (req, res) => {
   }
 }
 
+const deleteFromCart = async (req, res) => {
+  try {
+    const { userId, productId, quantity } = req.body
+    const deletedCart = await productService.deleteFromCart(userId, productId, quantity)
+    customResponse(res, 200, deletedCart, "Ok")
+  } catch (error) {
+    customResponse(res, 500, error.message, "Error al eliminar el producto del carrito")
+  }
+}
+
 const deleteProductController = async (req, res) => {
   try {
     const { id } = req.params
@@ -211,5 +241,8 @@ module.exports = {
   getProductByName,
   updateProductController,
   deleteProductController,
-  buyProductsController
+  buyProductsController,
+  addProductToCart,
+  getCartProducts,
+  deleteFromCart
 }

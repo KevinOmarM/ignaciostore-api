@@ -15,6 +15,8 @@ class authService {
                 throw new Error("Credenciales Invalidas")
             }
 
+            const expirationTime = userData.role === "admin" ? "1h" : "15m";
+
             const token = jwt.sign(
                 {
                     userId: userData._id,
@@ -22,7 +24,7 @@ class authService {
                     role: userData.role
                 },
                 process.env.JWT_SECRET_KEY,
-                { expiresIn: "15min" }
+                { expiresIn: expirationTime }
             )
 
             return token
