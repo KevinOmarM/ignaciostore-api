@@ -1,6 +1,7 @@
 const productModel = require("../models/productModel.js")
 const { default: mongoose } = require("mongoose")
 const BuyLogsService = require("./buyLogs.js")
+const cartModel = require("../models/cart.js")
 
 class productService {
 
@@ -130,6 +131,63 @@ class productService {
             throw new Error("Error al comprar productos: " + error.message)
         }
     }
+
+    async addProductToCart(cartData){
+        try {
+            await cartModel.findOneAndUpdate(
+                { user_id: cartData.userId, product_id: cartData.productId },
+                { $inc: { quantity: cartData.quantity } },
+                { upsert: true, new: true }
+            )
+            return "Ok"
+        } catch (error) {
+            throw new Error("Error al agregar el producto al carrito: " + error.message)
+        }
+    }
+
+    async getCartProducts(userId){
+        try {
+            const cartProducts = await cartModel.find({ user_id: userId }).populate("product_id")
+            return cartProducts
+        } catch (error) {
+            throw new Error("Error al obtener el carrito: " + error.message)
+        }
+    }
+
+async deleteFromCart(userId, productId, quantity = 1) {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(userId) || 
+            !mongoose.Types.ObjectId.isValid(productId)) {
+            throw new Error("IDs inválidos");
+        }
+
+        const cartItem = await cartModel.findOne({ 
+            user_id: userId, 
+            product_id: productId 
+        });
+
+        if (!cartItem) {
+            throw new Error("Producto no encontrado en el carrito");
+        }
+
+        if (cartItem.quantity <= quantity) {
+            await cartModel.deleteOne({ 
+                user_id: userId, 
+                product_id: productId 
+            });
+            return { success: true, message: "Producto eliminado del carrito" };
+        } else {
+            cartItem.quantity -= quantity;
+            await cartItem.save();
+            return { 
+                success: true, 
+                message: `Cantidad reducida a ${cartItem.quantity} unidades` 
+            };
+        }
+    } catch (error) {
+        throw new Error("Error al modificar el carrito: " + error.message);
+    }
+}
 
 
 }
