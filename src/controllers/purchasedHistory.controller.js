@@ -33,7 +33,6 @@ const getAllPurchasedHistory = async (req, res) => {
 
 const getPurchasedHistoryByUser = async (req, res) => {
     try {
-        console.log("Received request for user purchase history with params:", req.params, "and query:", req.query);
         const { id } = req.params;
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
