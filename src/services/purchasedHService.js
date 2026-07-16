@@ -2,6 +2,29 @@ const mongoose = require("mongoose");
 const buyLogsModel = require("../models/buyLogs");
 
 class PurchasedHistoryService {
+  resolveUserName(doc = {}) {
+    const populatedUser = doc.id_user || {};
+    const snapshot = doc.userSnapshot || {};
+
+    const populatedFullName = `${populatedUser.firstName || ""} ${populatedUser.lastName || ""}`.trim();
+    const snapshotFullName = `${snapshot.firstName || ""} ${snapshot.lastName || ""}`.trim();
+
+    return (
+      populatedFullName ||
+      populatedUser.username ||
+      snapshotFullName ||
+      snapshot.username ||
+      "Usuario no disponible"
+    );
+  }
+
+  normalizeDocs(docs = []) {
+    return docs.map((doc) => ({
+      ...doc,
+      userName: this.resolveUserName(doc),
+    }));
+  }
+
   buildDateFilter({ from = "", to = "" }) {
     const dateFilter = {};
     const hasFrom = String(from || "").trim();
@@ -47,8 +70,10 @@ class PurchasedHistoryService {
         .limit(safeLimit)
         .lean();
 
+      const normalizedDocs = this.normalizeDocs(docs);
+
       return {
-        docs,
+        docs: normalizedDocs,
         totalDocs,
         limit: safeLimit,
         page: safePage,
@@ -89,8 +114,10 @@ class PurchasedHistoryService {
         .limit(safeLimit)
         .lean();
 
+      const normalizedDocs = this.normalizeDocs(docs);
+
       return {
-        docs,
+        docs: normalizedDocs,
         totalDocs,
         limit: safeLimit,
         page: safePage,

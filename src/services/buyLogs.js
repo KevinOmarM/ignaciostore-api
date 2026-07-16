@@ -11,10 +11,24 @@ class BuyLogsService {
                 return sum + (price * quantity)
             }, 0)
 
+            const user = await userModel
+                .findById(logData.id_user)
+                .select("firstName lastName username")
+                .session(session)
+
+            if (!user) {
+                throw new Error("Usuario no encontrado para registrar compra")
+            }
+
             const normalizedLogData = {
                 ...logData,
                 totalCost: Number(logData.totalCost) > 0 ? Number(logData.totalCost) : calculatedTotal,
-                isPaid: Boolean(logData.isPaid)
+                isPaid: Boolean(logData.isPaid),
+                userSnapshot: {
+                    firstName: user.firstName || "",
+                    lastName: user.lastName || "",
+                    username: user.username || ""
+                }
             }
 
             await buyLogsModel.create([normalizedLogData], { session })

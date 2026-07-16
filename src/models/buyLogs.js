@@ -5,6 +5,20 @@ const buysLogsSchema = new mongoose.Schema({
         ref: "User",
         required: true
     },
+    userSnapshot: {
+        firstName: {
+            type: String,
+            default: ""
+        },
+        lastName: {
+            type: String,
+            default: ""
+        },
+        username: {
+            type: String,
+            default: ""
+        }
+    },
     totalCost: {
         type: Number,
         default: 0,
