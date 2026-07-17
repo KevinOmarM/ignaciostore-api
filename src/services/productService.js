@@ -21,7 +21,7 @@ class productService {
 
             const options = {
                 page: parseInt(page, 10),
-                limit : parseInt(limit, 10),
+                limit: parseInt(limit, 10),
                 select: "-createdAt -updatedAt -__v",
                 sort: { name: 1 },
                 collation: { locale: "es", strength: 1 }
@@ -37,7 +37,7 @@ class productService {
         }
     }
 
-    async getProductById(id){
+    async getProductById(id) {
         try {
             const product = await productModel.findById(id).select("-createdAt -updatedAt -__v")
             return product
@@ -46,7 +46,7 @@ class productService {
         }
     }
 
-    async searchProductByName(name, page = 1, limit = 10){
+    async searchProductByName(name, page = 1, limit = 10) {
         try {
             const query = {
                 name: { $regex: name, $options: "i" },
@@ -68,39 +68,93 @@ class productService {
         }
     }
 
-    async updateProduct(id, productData){
+    async updateProduct(id, productData) {
         try {
 
             Object.keys(productData).forEach(key => {
                 if (productData[key] === undefined || productData[key] === null) delete productData[key];
             });
-            const updatedProduct = await productModel.findByIdAndUpdate(id, productData, {returnDocument: "after"})
+            const updatedProduct = await productModel.findByIdAndUpdate(id, productData, { returnDocument: "after" })
             return updatedProduct
         } catch (error) {
             throw new Error("Error al actualizar el producto: " + error.message)
         }
     }
 
-    async deleteProduct(id){
+    async deleteProduct(id) {
         try {
-            await productModel.findByIdAndUpdate(id, {status: "blocked"})
+            await productModel.findByIdAndUpdate(id, { status: "blocked" })
             return "Producto eliminado"
         } catch (error) {
             throw new Error("Error al eliminar el producto: " + error.message)
         }
     }
 
-    async buyProducts(products, userId) {
+    // async buyProducts(products, userId) {
 
-        const session = await mongoose.startSession()
-        session.startTransaction()
+    //     const session = await mongoose.startSession()
+    //     session.startTransaction()
+
+    //     try {
+
+    //         const updatedProducts = []
+
+    //         for (const item of products) {
+
+    //             const { id, quantity } = item
+
+    //             if (!quantity || quantity <= 0)
+    //                 throw new Error("Cantidad inválida")
+
+    //             const product = await productModel.findOneAndUpdate(
+    //                 {
+    //                     _id: id,
+    //                     status: { $ne: "blocked" },
+    //                     stock: { $gte: quantity }
+    //                 },
+    //                 { $inc: { stock: -quantity } },
+    //                 { new: true, session }
+    //             )
+
+    //             if (!product)
+    //                 throw new Error(`Producto sin stock: ${id}`)
+
+    //             updatedProducts.push({
+    //                 id: product._id,
+    //                 name: product.name,
+    //                 price: product.price,
+    //                 quantity: quantity
+    //             })
+    //         }
+
+    //         await BuyLogsService.createLog({
+    //             id_user: userId,
+    //             products: updatedProducts
+    //         }, session)
+
+    //         await session.commitTransaction()
+    //         session.endSession()
+
+    //         return updatedProducts
+
+    //     } catch (error) {
+
+    //         await session.abortTransaction()
+    //         session.endSession()
+
+    //         throw new Error("Error al comprar productos: " + error.message)
+    //     }
+    // }
+
+
+    // La base de datos no permitía escrituras reintentables, lo cual daba como resultado un error,
+    // es por eso que se tomo la decisión de rehacer la función de compra con un rollback manual en caso de un error.
+    async buyProducts(products, userId) {
+        const updatedProducts = []
+        const rollbackActions = []
 
         try {
-
-            const updatedProducts = []
-
             for (const item of products) {
-
                 const { id, quantity } = item
 
                 if (!quantity || quantity <= 0)
@@ -113,11 +167,13 @@ class productService {
                         stock: { $gte: quantity }
                     },
                     { $inc: { stock: -quantity } },
-                    { new: true, session }
+                    { new: true }
                 )
 
                 if (!product)
                     throw new Error(`Producto sin stock: ${id}`)
+
+                rollbackActions.push({ id: product._id, quantity })
 
                 updatedProducts.push({
                     id: product._id,
@@ -130,23 +186,24 @@ class productService {
             await BuyLogsService.createLog({
                 id_user: userId,
                 products: updatedProducts
-            }, session)
-
-            await session.commitTransaction()
-            session.endSession()
+            })
 
             return updatedProducts
 
         } catch (error) {
 
-            await session.abortTransaction()
-            session.endSession()
+            for (const action of rollbackActions) {
+                await productModel.updateOne(
+                    { _id: action.id },
+                    { $inc: { stock: action.quantity } }
+                )
+            }
 
             throw new Error("Error al comprar productos: " + error.message)
         }
     }
 
-    async addProductToCart(cartData){
+    async addProductToCart(cartData) {
         try {
             await cartModel.findOneAndUpdate(
                 { user_id: cartData.userId, product_id: cartData.productId },
@@ -159,7 +216,7 @@ class productService {
         }
     }
 
-    async getCartProducts(userId){
+    async getCartProducts(userId) {
         try {
             const cartProducts = await cartModel.find({ user_id: userId }).populate("product_id")
             return cartProducts
@@ -168,40 +225,40 @@ class productService {
         }
     }
 
-async deleteFromCart(userId, productId, quantity = 1) {
-    try {
-        if (!mongoose.Types.ObjectId.isValid(userId) || 
-            !mongoose.Types.ObjectId.isValid(productId)) {
-            throw new Error("IDs inválidos");
-        }
+    async deleteFromCart(userId, productId, quantity = 1) {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(userId) ||
+                !mongoose.Types.ObjectId.isValid(productId)) {
+                throw new Error("IDs inválidos");
+            }
 
-        const cartItem = await cartModel.findOne({ 
-            user_id: userId, 
-            product_id: productId 
-        });
-
-        if (!cartItem) {
-            throw new Error("Producto no encontrado en el carrito");
-        }
-
-        if (cartItem.quantity <= quantity) {
-            await cartModel.deleteOne({ 
-                user_id: userId, 
-                product_id: productId 
+            const cartItem = await cartModel.findOne({
+                user_id: userId,
+                product_id: productId
             });
-            return { success: true, message: "Producto eliminado del carrito" };
-        } else {
-            cartItem.quantity -= quantity;
-            await cartItem.save();
-            return { 
-                success: true, 
-                message: `Cantidad reducida a ${cartItem.quantity} unidades` 
-            };
+
+            if (!cartItem) {
+                throw new Error("Producto no encontrado en el carrito");
+            }
+
+            if (cartItem.quantity <= quantity) {
+                await cartModel.deleteOne({
+                    user_id: userId,
+                    product_id: productId
+                });
+                return { success: true, message: "Producto eliminado del carrito" };
+            } else {
+                cartItem.quantity -= quantity;
+                await cartItem.save();
+                return {
+                    success: true,
+                    message: `Cantidad reducida a ${cartItem.quantity} unidades`
+                };
+            }
+        } catch (error) {
+            throw new Error("Error al modificar el carrito: " + error.message);
         }
-    } catch (error) {
-        throw new Error("Error al modificar el carrito: " + error.message);
     }
-}
 
 
 }
