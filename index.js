@@ -5,10 +5,18 @@ const cors = require("cors");
 const fileUpload = require("express-fileupload");
 
 const app = express();
+const ACCEPTED_ORIGINS = ['http://localhost:5173']
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
-app.use(cors());
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (ACCEPTED_ORIGINS.includes(origin)) return callback(null, true);
+    return callback(new Error("Origen no permitido."))
+  }
+}));
 
 app.get("/", (req, res) => {
   res.send("API funcionando");
