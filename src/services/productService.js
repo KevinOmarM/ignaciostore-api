@@ -2,6 +2,7 @@ const productModel = require("../models/productModel.js")
 const { default: mongoose } = require("mongoose")
 const BuyLogsService = require("./buyLogs.js")
 const cartModel = require("../models/cart.js")
+const { io } = require("../../index.js")
 
 class productService {
 
@@ -10,6 +11,7 @@ class productService {
             const newProduct = await productModel.create(productData)
             newProduct.status = "active"
             await newProduct.save()
+            io.emit('products:updated');
             return newProduct
         } catch (error) {
             throw new Error("Error al crear el producto: " + error.message)
@@ -70,11 +72,11 @@ class productService {
 
     async updateProduct(id, productData) {
         try {
-
             Object.keys(productData).forEach(key => {
                 if (productData[key] === undefined || productData[key] === null) delete productData[key];
             });
             const updatedProduct = await productModel.findByIdAndUpdate(id, productData, { returnDocument: "after" })
+            io.emit('products:updated');
             return updatedProduct
         } catch (error) {
             throw new Error("Error al actualizar el producto: " + error.message)
@@ -84,6 +86,7 @@ class productService {
     async deleteProduct(id) {
         try {
             await productModel.findByIdAndUpdate(id, { status: "blocked" })
+            io.emit('products:updated');
             return "Producto eliminado"
         } catch (error) {
             throw new Error("Error al eliminar el producto: " + error.message)
@@ -155,11 +158,13 @@ class productService {
 
         try {
             for (const item of products) {
-                const { id, quantity } = item
+                const { id, quantity, stock } = item
 
+                // verificamos si la cantidad existe y es igual o mayor a 0
                 if (!quantity || quantity <= 0)
                     throw new Error("Cantidad inválida")
 
+                // actualizamos el stock del producto
                 const product = await productModel.findOneAndUpdate(
                     {
                         _id: id,
@@ -167,26 +172,30 @@ class productService {
                         stock: { $gte: quantity }
                     },
                     { $inc: { stock: -quantity } },
-                    { new: true }
+                    { returnDocument: 'after' }
                 )
 
-                if (!product)
-                    throw new Error(`Producto sin stock: ${id}`)
-
-                rollbackActions.push({ id: product._id, quantity })
-
-                updatedProducts.push({
-                    id: product._id,
-                    name: product.name,
-                    price: product.price,
-                    quantity: quantity
-                })
+                // en caso de no haber stock (agotado), ignoramos el producto en la compra
+                if (product) {
+                    rollbackActions.push({ id: product._id, quantity })
+                    updatedProducts.push({
+                        id: product._id,
+                        name: product.name,
+                        price: product.price,
+                        quantity: quantity
+                    })
+                    //eliminamos el producto del carrito
+                    await this.deleteFromCart(userId, product._id, quantity);
+                }
             }
 
             await BuyLogsService.createLog({
                 id_user: userId,
                 products: updatedProducts
             })
+
+            // avisar por medio del socket que se hizo una compra
+            io.emit('products:updated');
 
             return updatedProducts
 
@@ -205,14 +214,47 @@ class productService {
 
     async addProductToCart(cartData) {
         try {
-            await cartModel.findOneAndUpdate(
+            // obtengo el stock actual del producto
+            const product = await productModel
+                .findById(cartData.productId)
+                .select('stock')
+                .lean();
+
+            if (!product) {
+                throw new Error('Producto no encontrado');
+            }
+
+            const currentProductStock = product.stock;
+
+            // actualizo el producto en el carrito
+            const updatedCart = await cartModel.findOneAndUpdate(
                 { user_id: cartData.userId, product_id: cartData.productId },
                 { $inc: { quantity: cartData.quantity } },
                 { upsert: true, new: true }
-            )
-            return "Ok"
+            );
+
+            // si es mayor al stock actual, deshago los cambios y retorno error
+            if (updatedCart.quantity > currentProductStock) {
+                const cantidadRevertida = updatedCart.quantity - cartData.quantity;
+
+                if (cantidadRevertida <= 0) {
+                    await cartModel.deleteOne({
+                        user_id: cartData.userId,
+                        product_id: cartData.productId
+                    });
+                } else {
+                    await cartModel.findOneAndUpdate(
+                        { user_id: cartData.userId, product_id: cartData.productId },
+                        { $inc: { quantity: -cartData.quantity } }
+                    );
+                }
+
+                throw new Error('Supera el stock');
+            }
+
+            return "Ok";
         } catch (error) {
-            throw new Error("Error al agregar el producto al carrito: " + error.message)
+            throw error;
         }
     }
 

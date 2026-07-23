@@ -3,19 +3,19 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken")
 
 class authService {
-    async login(username, password){
+    async login(username, password) {
         try {
             const userData = await userModel.findOne({ username })
             if (!userData) {
                 throw new Error("Credenciales Invalidas")
             }
-            
+
             const isValidPassword = await bcrypt.compare(password, userData.password)
             if (!isValidPassword) {
                 throw new Error("Credenciales Invalidas")
             }
 
-            const expirationTime = userData.role === "admin" ? "1h" : "15m";
+            const expirationTime = userData.role === "admin" ? "24h" : "8h";
 
             const token = jwt.sign(
                 {
