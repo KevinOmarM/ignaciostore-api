@@ -152,7 +152,7 @@ class productService {
 
     // La base de datos no permitía escrituras reintentables, lo cual daba como resultado un error,
     // es por eso que se tomo la decisión de rehacer la función de compra con un rollback manual en caso de un error.
-    async buyProducts(products, userId) {
+    async buyCartProducts(products, userId) {
         const updatedProducts = []
         const rollbackActions = []
 
@@ -164,8 +164,14 @@ class productService {
                 if (!quantity || quantity <= 0)
                     throw new Error("Cantidad inválida")
 
+                // obtenemos el producto para validar antes de actualizar
+                const product = await productModel.findById(id).select('stock').lean();
+
+                // en caso de haber stock pero al querer comprar mas cantidad que este
+                if (product.stock < quantity) throw new Error('Supera el stock');
+
                 // actualizamos el stock del producto
-                const product = await productModel.findOneAndUpdate(
+                const currentProduct = await productModel.findOneAndUpdate(
                     {
                         _id: id,
                         status: { $ne: "blocked" },
@@ -175,20 +181,24 @@ class productService {
                     { returnDocument: 'after' }
                 )
 
-                // en caso de no haber stock (agotado), ignoramos el producto en la compra
-                if (product) {
-                    rollbackActions.push({ id: product._id, quantity })
+                // si hay stock hacemos la compra, si esta completamente agotado simplemente ignoramos este producto
+                if (currentProduct) {
+                    rollbackActions.push({ id, quantity })
                     updatedProducts.push({
-                        id: product._id,
-                        name: product.name,
-                        price: product.price,
+                        id: currentProduct._id,
+                        name: currentProduct.name,
+                        price: currentProduct.price,
                         quantity: quantity
                     })
-                    //eliminamos el producto del carrito
-                    await this.deleteFromCart(userId, product._id, quantity);
                 }
             }
 
+            // borramos todo del carrito
+            updatedProducts.forEach(async (item) => {
+                await cartModel.findByIdAndDelete(item.id)
+            });
+
+            // registramos en los logs las compras realizadas
             await BuyLogsService.createLog({
                 id_user: userId,
                 products: updatedProducts
@@ -197,10 +207,9 @@ class productService {
             // avisar por medio del socket que se hizo una compra
             io.emit('products:updated');
 
-            return updatedProducts
-
+            return updatedProducts;
         } catch (error) {
-
+            console.error("Error detectado", error)
             for (const action of rollbackActions) {
                 await productModel.updateOne(
                     { _id: action.id },
@@ -208,7 +217,39 @@ class productService {
                 )
             }
 
-            throw new Error("Error al comprar productos: " + error.message)
+            throw new Error(error)
+        }
+    }
+
+    async buyProduct(userId, product) {
+        try {
+            // obtengo el producto filtrando y validando que haya stock suficiente para la cantidad
+            const currentProduct = await productModel.findOneAndUpdate(
+                {
+                    _id: product.id,
+                    status: { $ne: "blocked" },
+                    stock: { $gte: product.quantity }
+                },
+                { $inc: { stock: -product.quantity } },
+                { returnDocument: 'after' }
+            )
+
+            // si no hay producto es que no hay suficiente stock o esta bloqueado
+            if (!currentProduct) throw new Error('Supera el stock');
+
+            // después de modificar el producto es necesario registrar la compra en los logs
+            await BuyLogsService.createLog({
+                id_user: userId,
+                products: [currentProduct]
+            })
+
+            // emitimos la señal para decir que hubo cambios
+            io.emit('products:updated')
+
+            return currentProduct;
+        } catch (error) {
+            console.log(error)
+            throw new Error('Error al comprar producto: ', error.message)
         }
     }
 
@@ -301,8 +342,6 @@ class productService {
             throw new Error("Error al modificar el carrito: " + error.message);
         }
     }
-
-
 }
 
 module.exports = new productService()

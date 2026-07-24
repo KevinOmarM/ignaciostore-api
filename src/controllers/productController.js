@@ -220,25 +220,44 @@ const deleteProductController = async (req, res) => {
   }
 }
 
-const buyProductsController = async (req, res) => {
+const buyCartProductsController = async (req, res) => {
   try {
-
     const userId = req.user.userId
     const { products } = req.body
 
     if (!products || !Array.isArray(products) || products.length === 0)
       return customResponse(res, 400, null, "Lista de productos inválida")
 
-    const result = await productService.buyProducts(products, userId)
+    const result = await productService.buyCartProducts(products, userId)
 
     customResponse(res, 200, result, "Compra realizada")
 
   } catch (error) {
-    customResponse(res, 500, error.message, "Error al comprar")
+    if (error.message === 'Error: Supera el stock') {
+      return customResponse(res, 400, error, 'Supera el stock')
+    } else {
+      return customResponse(res, 500, error, "Error al comprar")
+    }
   }
 }
 
+const buyProductController = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { productId } = req.params;
+    const { quantity } = req.body || {};
 
+    if (!mongoose.isValidObjectId(userId)) return customResponse(res, 400, {}, "Id inválido");
+    if (quantity === undefined) return customResponse(res, 400, {}, "La cantidad es requerida.");
+    if (quantity === 0 || quantity < 0 || !Number.isInteger(quantity)) return customResponse(res, 400, {}, "Cantidad inválida");
+
+    const result = await productService.buyProduct(userId, { id: productId, quantity });
+
+    return customResponse(res, 200, {}, "Compra realizada");
+  } catch (error) {
+    return customResponse(res, 500, error, "Error al comprar");
+  }
+}
 
 module.exports = {
   createProductController,
@@ -247,7 +266,8 @@ module.exports = {
   getProductByName,
   updateProductController,
   deleteProductController,
-  buyProductsController,
+  buyCartProductsController,
+  buyProductController,
   addProductToCart,
   getCartProducts,
   deleteFromCart
