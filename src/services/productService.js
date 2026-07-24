@@ -156,6 +156,8 @@ class productService {
         const updatedProducts = []
         const rollbackActions = []
 
+        console.log(products)
+
         try {
             for (const item of products) {
                 const { id, quantity, stock } = item
@@ -185,7 +187,7 @@ class productService {
                 if (currentProduct) {
                     rollbackActions.push({ id, quantity })
                     updatedProducts.push({
-                        id: currentProduct._id,
+                        id: currentProduct.id,
                         name: currentProduct.name,
                         price: currentProduct.price,
                         quantity: quantity
@@ -194,9 +196,11 @@ class productService {
             }
 
             // borramos todo del carrito
-            updatedProducts.forEach(async (item) => {
-                await cartModel.findByIdAndDelete(item.id)
-            });
+            await Promise.all(
+                updatedProducts.map(item => {
+                    this.deleteFromCart(userId, item.id, item.quantity)
+                })
+            );
 
             // registramos en los logs las compras realizadas
             await BuyLogsService.createLog({
