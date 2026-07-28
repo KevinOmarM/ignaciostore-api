@@ -54,8 +54,10 @@ const getPendingLogs = async (req, res) => {
 
 const markPurchaseAsPaid = async (req, res) => {
     try {
-        const { id } = req.params
-        const updatedLog = await buyLogsService.markLogAsPaid(id)
+        const { id } = req.params;
+        const { userId, amount } = req.body;
+
+        const updatedLog = await buyLogsService.markLogAsPaid(userId, id, amount);
         customResponse(res, 200, updatedLog, "Compra marcada como pagada")
     } catch (error) {
         customResponse(res, 500, null, error.message || "Error marcando compra como pagada")

@@ -2,7 +2,7 @@ const buyLogsModel = require("../models/buyLogs")
 const userModel = require("../models/userModel")
 
 class BuyLogsService {
-    async createLog (logData, session = null){
+    async createLog(logData, session = null) {
         try {
             const products = Array.isArray(logData.products) ? logData.products : []
             const calculatedTotal = products.reduce((sum, product) => {
@@ -48,7 +48,7 @@ class BuyLogsService {
         }
     }
 
-    async getAllLogs(){
+    async getAllLogs() {
         try {
             const logs = await buyLogsModel.find()
             return logs
@@ -57,7 +57,7 @@ class BuyLogsService {
         }
     }
 
-    async getLogById(id){
+    async getLogById(id) {
         try {
             const log = await buyLogsModel.findById(id)
             return log
@@ -66,7 +66,7 @@ class BuyLogsService {
         }
     }
 
-    async getLogByUserId(userId, page = 1, limit = 10, from = "", to = ""){
+    async getLogByUserId(userId, page = 1, limit = 10, from = "", to = "") {
         try {
             const safePage = Number(page) > 0 ? Number(page) : 1
             const safeLimit = Number(limit) > 0 ? Number(limit) : 10
@@ -250,18 +250,42 @@ class BuyLogsService {
         }
     }
 
-    async markLogAsPaid(id) {
+    async markLogAsPaid(userId, logId, amount) {
+        console.log(userId, logId, amount)
         try {
+            if (!amount || amount <= 0) {
+                throw new Error("Monto inválido")
+            }
+
             const updatedLog = await buyLogsModel
-                .findByIdAndUpdate(id, { isPaid: true }, { new: true })
+                .findByIdAndUpdate(logId, { isPaid: true }, { new: true })
                 .populate("id_user", "firstName lastName username")
 
             if (!updatedLog) {
                 throw new Error("Registro de compra no encontrado")
             }
 
+            if (updatedLog.id_user._id.toString() !== userId.toString()) {
+                throw new Error("El registro no pertenece a este usuario")
+            }
+
+            const user = await userModel.findByIdAndUpdate(
+                userId,
+                { $inc: { debt: -amount } },
+                { new: true }
+            )
+
+            if (!user) throw new Error("Usuario no encontrado.")
+
             return updatedLog
         } catch (error) {
+            // en caso de error devolvemos los datos como estaban
+            try {
+                await buyLogsModel.findByIdAndUpdate(logId, { isPaid: false })
+            } catch (rollbackError) {
+                console.error("Error revirtiendo isPaid:", rollbackError)
+            }
+
             throw new Error(error.message || "Error marcando compra como pagada")
         }
     }

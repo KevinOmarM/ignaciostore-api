@@ -65,6 +65,8 @@ const createUser = async (req, res) => {
   try {
     const { firstName, lastName, username, password, role, debt } = req.body;
 
+    console.log(req.body)
+
     if (!firstName || !lastName || !username || !password) {
       return customResponse(res, 400, null, "Faltan campos obligatorios");
     }
