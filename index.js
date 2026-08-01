@@ -7,14 +7,15 @@ const { Server } = require('socket.io');
 const { createServer } = require('node:http');
 
 const app = express();
-const ACCEPTED_ORIGINS = ['http://localhost:5173']
+const ACCEPTED_ORIGINS = ['http://localhost:5173', 'http://100.90.251.41:5173', 'http://192.168.123.134:5173',]
 const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'http://100.90.251.41:5173', 'http://192.168.123.134:5173'],
     methods: ['GET', 'POST'],
   },
+  credentials: true
 });
 
 app.use(express.json());
