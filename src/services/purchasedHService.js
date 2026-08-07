@@ -64,7 +64,7 @@ class PurchasedHistoryService {
 
       const docs = await buyLogsModel
         .find(query)
-        .populate("id_user", "firstName lastName username")
+        .populate("id_user", "firstName lastName username profilePhoto")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(safeLimit)

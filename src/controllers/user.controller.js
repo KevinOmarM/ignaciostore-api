@@ -65,7 +65,7 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { firstName, lastName, username, password, role, debt } = req.body;
+    const { firstName, lastName, username, password, role } = req.body;
 
     console.log(req.body)
 
@@ -90,8 +90,7 @@ const createUser = async (req, res) => {
       lastName,
       username,
       password: hashedPassword,
-      role,
-      debt,
+      role
     });
 
     console.log(newUser);

@@ -289,6 +289,31 @@ class BuyLogsService {
             throw new Error(error.message || "Error marcando compra como pagada")
         }
     }
+
+
+    async markTotalDebtAsPaid(userId) {
+        try {
+            // obtenemos todos los pendientes y sumamos el total
+            const earrings = await buyLogsModel.find({ id_user: userId, isPaid: false });
+            const total = earrings.reduce((acc, log) => acc + log.totalCost, 0);
+
+            // actualizamos todas las deudas pendientes y las marcamos como pagadas
+            await buyLogsModel.updateMany(
+                { id_user: userId, isPaid: false },
+                { $set: { isPaid: true, paidAt: new Date() } }
+            );
+
+            // por ultimo actualizamos la deuda total del usuario restando el total antes obtenido
+            const user = await userModel.findByIdAndUpdate(
+                userId,
+                { $inc: { debt: -total } },
+                { new: true }
+            );
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
 }
 
 module.exports = new BuyLogsService()

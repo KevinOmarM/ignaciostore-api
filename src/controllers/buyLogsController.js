@@ -64,6 +64,17 @@ const markPurchaseAsPaid = async (req, res) => {
     }
 }
 
+// marcar deuda total como pagada
+const markTotalDebtAsPaid = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const updatedLog = await buyLogsService.markTotalDebtAsPaid(userId);
+        customResponse(res, 200, updatedLog, "Deuda marcada como pagada")
+    } catch (error) {
+        customResponse(res, 500, null, error.message || "Error marcando compra como pagada")
+    }
+}
+
 const downloadMonthlyReport = async (req, res) => {
     try {
         const { month, year } = req.params
@@ -105,5 +116,6 @@ module.exports = {
     getLogsByUserId,
     getPendingLogs,
     markPurchaseAsPaid,
-    downloadMonthlyReport
+    downloadMonthlyReport,
+    markTotalDebtAsPaid
 }
