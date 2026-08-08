@@ -66,7 +66,7 @@ class BuyLogsService {
         }
     }
 
-    async getLogByUserId(userId, page = 1, limit = 10, from = "", to = "") {
+    async getLogByUserId(userId, page = 1, limit = 10, from = "", to = "", status = "all") {
         try {
             const safePage = Number(page) > 0 ? Number(page) : 1
             const safeLimit = Number(limit) > 0 ? Number(limit) : 10
@@ -97,6 +97,10 @@ class BuyLogsService {
                 if (!query.createdAt.$gte && !query.createdAt.$lte) {
                     delete query.createdAt
                 }
+            }
+
+            if (status && status !== "all") {
+                query.isPaid = status === "paid";
             }
 
             const totalDocs = await buyLogsModel.countDocuments(query)

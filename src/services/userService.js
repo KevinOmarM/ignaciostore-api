@@ -4,17 +4,36 @@ const bcrypt = require("bcrypt");
 const { uploadImage } = require("../helpers/cloudinary.js")
 const fs = require("fs");
 
-const getAllUsersService = async ({ page = 1, limit = 10 }) => {
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+const getAllUsersService = async ({ page = 1, limit = 10, status = "all", search = "", role = "all", debt = "all" }) => {
   try {
     const options = {
-      page,
-      limit,
+      page: Number(page) > 0 ? Number(page) : 1,
+      limit: Number(limit) > 0 ? Math.min(Number(limit), 50) : 10,
       select: "firstName lastName username role debt status profilePhoto",
+      sort: debt === "debtDesc" ? { debt: -1, _id: 1 }
+        : debt === "debtAsc" ? { debt: 1, _id: 1 }
+          : { firstName: 1, _id: 1 },
+      collation: { locale: "es", strength: 1 },
     };
 
-    const result = await userModel.paginate({}, options);
+    const query = {}
 
-    return result;
+    if (status && status !== "all") query.status = status
+    if (role && role !== "all") query.role = role
+
+    const term = String(search || "").trim()
+    if (term) {
+      const regex = { $regex: escapeRegex(term), $options: "i" }
+      query.$or = [
+        { firstName: regex },
+        { lastName: regex },
+        { username: regex },
+      ]
+    }
+
+    return await userModel.paginate(query, options);
   } catch (error) {
     throw new Error(`Error obteniendo usuarios: ${error.message}`);
   }

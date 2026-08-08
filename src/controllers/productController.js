@@ -68,9 +68,22 @@ const createProductController = async (req, res) => {
 
 const getAllProductsController = async (req, res) => {
   try {
-    const { page = 1, limit = 10, includeBlocked = "false" } = req.query
-    const shouldIncludeBlocked = String(includeBlocked).toLowerCase() === "true"
-    const products = await productService.getAllProducts(page, limit, shouldIncludeBlocked)
+    const {
+      page = 1,
+      limit = 10,
+      status = "all",
+      search = "",
+      stockStatus = "all",
+    } = req.query
+
+    const products = await productService.getAllProducts({
+      page,
+      limit,
+      status,
+      search,
+      stockStatus,
+    })
+
     customResponse(res, 200, products, "Ok")
   } catch (error) {
     customResponse(res, 500, error, "Error al obtener los productos")
@@ -202,10 +215,6 @@ const deleteProductController = async (req, res) => {
     getProduct = await productService.getProductById(id)
     if (!getProduct) {
       return customResponse(res, 404, null, "Producto no encontrado")
-    }
-
-    if (getProduct.status === "blocked") {
-      return customResponse(res, 400, null, "El producto ya está eliminado")
     }
 
     const author = req.user?.id

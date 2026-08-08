@@ -23,7 +23,7 @@ const productSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["active", "inactive"],
+    enum: ["active", "blocked"],
     default: "active",
   },
 });

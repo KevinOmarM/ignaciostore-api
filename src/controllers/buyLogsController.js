@@ -34,8 +34,8 @@ const getLogsById = async (req, res) => {
 const getLogsByUserId = async (req, res) => {
     try {
         const { id } = req.params
-        const { page = 1, limit = 10, from = "", to = "" } = req.query
-        const logs = await buyLogsService.getLogByUserId(id, page, limit, from, to)
+        const { page = 1, limit = 10, from = "", to = "", status = "all" } = req.query
+        const logs = await buyLogsService.getLogByUserId(id, page, limit, from, to, status)
         customResponse(res, 200, logs, "Registros de compras obtenidos exitosamente")
     } catch (error) {
         customResponse(res, 500, null, "Error obteniendo los registros de compras")

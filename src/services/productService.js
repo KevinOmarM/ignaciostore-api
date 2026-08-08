@@ -18,9 +18,15 @@ class productService {
         }
     }
 
-    async getAllProducts(page = 1, limit = 10, includeBlocked = false) {
+    async getAllProducts({
+        page = 1,
+        limit = 10,
+        status = "all",
+        search = "",
+        stockStatus = "all",
+    } = {}) {
         try {
-
+            const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
             const options = {
                 page: parseInt(page, 10),
                 limit: parseInt(limit, 10),
@@ -28,13 +34,24 @@ class productService {
                 sort: { name: 1 },
                 collation: { locale: "es", strength: 1 }
             }
-            const query = includeBlocked
-                ? {}
-                : { status: { $ne: "blocked" } }
+
+            const query = {}
+
+            if (status && status !== "all") query.status = status
+
+            const term = search.trim()
+            if (term) {
+                query.name = { $regex: escapeRegex(term), $options: "i" }
+            }
+
+            if (stockStatus === "soldOut") query.stock = 0
+            if (stockStatus === "last") query.stock = 1
+            if (stockStatus === "available") query.stock = { $gt: 0 }
 
             const products = await productModel.paginate(query, options)
             return products
         } catch (error) {
+            console.log(error)
             throw new Error("Error al obtener los productos: " + error.message)
         }
     }
@@ -85,7 +102,7 @@ class productService {
 
     async deleteProduct(id) {
         try {
-            await productModel.findByIdAndUpdate(id, { status: "blocked" })
+            await productModel.findByIdAndDelete(id)
             io.emit('products:updated');
             return "Producto eliminado"
         } catch (error) {

@@ -18,10 +18,16 @@ const {
 
 const getAllUsers = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      status = "all",
+      role = "all",
+      debt = "all"
+    } = req.query
 
-    const users = await getAllUsersService({ page, limit });
+    const users = await getAllUsersService({ page, limit, status, search, role, debt });
 
     return customResponse(res, 200, users, "Usuarios obtenidos exitosamente");
   } catch (error) {
