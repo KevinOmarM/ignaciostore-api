@@ -15,6 +15,8 @@ class authService {
                 throw new Error("Credenciales Invalidas")
             }
 
+            if (userData.status === "inactive") throw new Error("Usuario inactivo");
+
             const expirationTime = userData.role === "admin" ? "24h" : "8h";
 
             const token = jwt.sign(

@@ -102,11 +102,22 @@ class productService {
 
     async deleteProduct(id) {
         try {
-            await productModel.findByIdAndDelete(id)
-            io.emit('products:updated');
-            return "Producto eliminado"
+            const product = await productModel.findById(id);
+            if (!product) {
+                const err = new Error("Producto no encontrado");
+                err.status = 404;
+                throw err;
+            }
+
+            const result = await cartModel.deleteMany({ product_id: id });
+
+            await productModel.findByIdAndDelete(id);
+
+            io.emit("products:updated");
+            return "Producto eliminado";
         } catch (error) {
-            throw new Error("Error al eliminar el producto: " + error.message)
+            if (error.status === 404) throw error;
+            throw new Error("Error al eliminar el producto: " + error.message);
         }
     }
 
