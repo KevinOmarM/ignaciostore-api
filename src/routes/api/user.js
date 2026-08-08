@@ -11,7 +11,9 @@ const {
   addUserDebt,
   subtractUserDebt,
   getAllUsersNames,
-} = require("../../controllers/user.controller.js"); 
+  changeUserPassword,
+  changeUserPhoto
+} = require("../../controllers/user.controller.js");
 
 // Get all users (paginated)
 router.get("/", checkAuth, getAllUsers);
@@ -27,6 +29,12 @@ router.post("/", checkAuth, createUser);
 
 // Update user
 router.put("/:id", checkAuth, updateUser);
+
+// change user Password
+router.patch("/changePassword/:id", checkAuth, changeUserPassword)
+
+// change user Photo
+router.patch("/:id/profile-photo", checkAuth, changeUserPhoto)
 
 // Delete user
 router.delete("/:id", checkAuth, deleteUser);

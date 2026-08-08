@@ -34,8 +34,8 @@ const getLogsById = async (req, res) => {
 const getLogsByUserId = async (req, res) => {
     try {
         const { id } = req.params
-        const { page = 1, limit = 10, from = "", to = "" } = req.query
-        const logs = await buyLogsService.getLogByUserId(id, page, limit, from, to)
+        const { page = 1, limit = 10, from = "", to = "", status = "all" } = req.query
+        const logs = await buyLogsService.getLogByUserId(id, page, limit, from, to, status)
         customResponse(res, 200, logs, "Registros de compras obtenidos exitosamente")
     } catch (error) {
         customResponse(res, 500, null, "Error obteniendo los registros de compras")
@@ -54,9 +54,22 @@ const getPendingLogs = async (req, res) => {
 
 const markPurchaseAsPaid = async (req, res) => {
     try {
-        const { id } = req.params
-        const updatedLog = await buyLogsService.markLogAsPaid(id)
+        const { id } = req.params;
+        const { userId, amount } = req.body;
+
+        const updatedLog = await buyLogsService.markLogAsPaid(userId, id, amount);
         customResponse(res, 200, updatedLog, "Compra marcada como pagada")
+    } catch (error) {
+        customResponse(res, 500, null, error.message || "Error marcando compra como pagada")
+    }
+}
+
+// marcar deuda total como pagada
+const markTotalDebtAsPaid = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const updatedLog = await buyLogsService.markTotalDebtAsPaid(userId);
+        customResponse(res, 200, updatedLog, "Deuda marcada como pagada")
     } catch (error) {
         customResponse(res, 500, null, error.message || "Error marcando compra como pagada")
     }
@@ -103,5 +116,6 @@ module.exports = {
     getLogsByUserId,
     getPendingLogs,
     markPurchaseAsPaid,
-    downloadMonthlyReport
+    downloadMonthlyReport,
+    markTotalDebtAsPaid
 }

@@ -14,8 +14,10 @@ const loginController = async (req, res) => {
         await logService.createLog(user.id, "Iniciar sesión", `Usuario ${user.username} inició sesión`)
         customResponse(res, 200, result, "Ok")
     } catch (error) {
-        customResponse(res, 500, "Error al iniciar sesion", null, error.message)
-        throw new Error(error.message)
+        console.error(error)
+        if (error.message.includes("Credenciales Invalidas")) return customResponse(res, 401, {}, "Credenciales Invalidas");
+        if (error.message.includes("Usuario inactivo")) return customResponse(res, 403, {}, "Usuario inactivo");
+        return customResponse(res, 500, {}, null, "Error al iniciar sesión")
     }
 }
 

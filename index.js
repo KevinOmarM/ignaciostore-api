@@ -3,12 +3,25 @@ const connectDB = require("./config/dbConnection");
 const express = require("express");
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
+const { Server } = require('socket.io');
+const { createServer } = require('node:http');
 
 const app = express();
-const ACCEPTED_ORIGINS = ['http://localhost:5173']
+const ACCEPTED_ORIGINS = ['http://localhost:5173', 'http://100.90.251.41:5173', 'http://192.168.123.134:5173',]
+const server = createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: ACCEPTED_ORIGINS,
+    methods: ['GET', 'POST'],
+  },
+  credentials: true
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
+
+app.use(express.json());
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -17,6 +30,14 @@ app.use(cors({
     return callback(new Error("Origen no permitido."))
   }
 }));
+
+io.on('connection', (socket) => {
+  console.log('Cliente conectado:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('Cliente desconectado:', socket.id);
+  });
+});
 
 app.get("/", (req, res) => {
   res.send("API funcionando");
@@ -29,13 +50,16 @@ app.use(
   })
 );
 
+module.exports = { app, server, io };
+
 app.use(require('./src/routes'));
 
 const PORT = process.env.PORT || 5000;
 
+
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
   });
 };

@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       required: true,
-        unique: true,
+      unique: true,
     },
     password: {
       type: String,
@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["active", "inactive"],
       default: "active",
+    },
+    profilePhoto: {
+      url: String,
+      public_id: String
     },
   },
   {

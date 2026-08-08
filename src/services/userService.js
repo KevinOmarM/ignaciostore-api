@@ -1,17 +1,39 @@
 const userModel = require("../models/userModel");
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const { uploadImage } = require("../helpers/cloudinary.js")
+const fs = require("fs");
 
-const getAllUsersService = async ({ page = 1, limit = 10 }) => {
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+const getAllUsersService = async ({ page = 1, limit = 10, status = "all", search = "", role = "all", debt = "all" }) => {
   try {
     const options = {
-      page,
-      limit,
-      select: "firstName lastName username role debt status",
+      page: Number(page) > 0 ? Number(page) : 1,
+      limit: Number(limit) > 0 ? Math.min(Number(limit), 50) : 10,
+      select: "firstName lastName username role debt status profilePhoto",
+      sort: debt === "debtDesc" ? { debt: -1, _id: 1 }
+        : debt === "debtAsc" ? { debt: 1, _id: 1 }
+          : { firstName: 1, _id: 1 },
+      collation: { locale: "es", strength: 1 },
     };
 
-    const result = await userModel.paginate({}, options);
+    const query = {}
 
-    return result;
+    if (status && status !== "all") query.status = status
+    if (role && role !== "all") query.role = role
+
+    const term = String(search || "").trim()
+    if (term) {
+      const regex = { $regex: escapeRegex(term), $options: "i" }
+      query.$or = [
+        { firstName: regex },
+        { lastName: regex },
+        { username: regex },
+      ]
+    }
+
+    return await userModel.paginate(query, options);
   } catch (error) {
     throw new Error(`Error obteniendo usuarios: ${error.message}`);
   }
@@ -25,7 +47,7 @@ const getUserByIdService = async (id) => {
 
     const user = await userModel
       .findById(id)
-      .select("firstName lastName username password role debt status");
+      .select("firstName lastName username password role debt status profilePhoto");
 
     if (!user) {
       throw new Error("Usuario no encontrado");
@@ -67,7 +89,7 @@ const createUserService = async ({
     const userResponse = await userModel
       .findById(newUser._id)
       .select(
-        "firstName lastName username role debt status createdAt updatedAt",
+        "firstName lastName username role debt status createdAt updatedAt profilePhoto",
       );
 
     return userResponse;
@@ -111,7 +133,7 @@ const updateUserService = async (id, updateData) => {
         runValidators: true,
       })
       .select(
-        "firstName lastName username password role status createdAt updatedAt",
+        "firstName lastName username role status createdAt updatedAt",
       );
 
     if (!updatedUser) {
@@ -223,6 +245,46 @@ const getAllUsersNamesService = async () => {
   }
 };
 
+const changePasswordService = async (userId, currentPassword, newPassword) => {
+  try {
+    const userData = await userModel.findById(userId).select("password");
+    if (!userData) {
+      throw new Error("Usuario no encontrado");
+    }
+    // valido que la contraseña es correcta 
+    const isValidPassword = await bcrypt.compare(currentPassword, userData.password)
+    if (!isValidPassword) {
+      throw new Error("Credenciales Invalidas")
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await userModel.findOneAndUpdate({ _id: userId }, { password: hashedPassword })
+  } catch (error) {
+    throw new Error(`Error al cambiar contraseña: ${error.message}`);
+  }
+}
+
+
+
+const changeUserPhotoService = async (userId, filePath) => {
+  try {
+    const result = await uploadImage(filePath, "storage/img/users");
+
+    fs.unlink(filePath, (err) => {
+      if (err) console.error("Error al borrar archivo temporal:", err);
+    });
+
+    const imageData = {
+      url: result.secure_url,
+      public_id: result.public_id,
+    };
+
+    await userModel.findByIdAndUpdate(userId, { profilePhoto: imageData });
+  } catch (error) {
+    throw new Error(`Error al cambiar la foto de perfil: ${error.message}`);
+  }
+};
+
 module.exports = {
   getAllUsersService,
   getUserByIdService,
@@ -233,4 +295,6 @@ module.exports = {
   subtractUserDebtService,
   getUserByUsernameService,
   getAllUsersNamesService,
+  changePasswordService,
+  changeUserPhotoService
 };

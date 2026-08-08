@@ -12,14 +12,22 @@ const {
   subtractUserDebtService,
   getUserByUsernameService,
   getAllUsersNamesService,
+  changePasswordService,
+  changeUserPhotoService,
 } = require("../services/userService");
 
 const getAllUsers = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      status = "all",
+      role = "all",
+      debt = "all"
+    } = req.query
 
-    const users = await getAllUsersService({ page, limit });
+    const users = await getAllUsersService({ page, limit, status, search, role, debt });
 
     return customResponse(res, 200, users, "Usuarios obtenidos exitosamente");
   } catch (error) {
@@ -63,7 +71,9 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { firstName, lastName, username, password, role, debt } = req.body;
+    const { firstName, lastName, username, password, role } = req.body;
+
+    console.log(req.body)
 
     if (!firstName || !lastName || !username || !password) {
       return customResponse(res, 400, null, "Faltan campos obligatorios");
@@ -86,8 +96,7 @@ const createUser = async (req, res) => {
       lastName,
       username,
       password: hashedPassword,
-      role,
-      debt,
+      role
     });
 
     console.log(newUser);
@@ -227,7 +236,7 @@ const deleteUser = async (req, res) => {
     return customResponse(res, 500, null, "Error interno del servidor");
   }
 };
-//Esto sirve para la parte de deuda del userz
+//Esto sirve para la parte de deuda del user
 const addUserDebt = async (req, res) => {
   try {
     const { id } = req.params;
@@ -290,6 +299,42 @@ const subtractUserDebt = async (req, res) => {
   }
 };
 
+const changeUserPassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const { id } = req.params;
+
+    const response = await changePasswordService(id, currentPassword, newPassword);
+
+    return customResponse(res, 200, null, "Contraseña actualizada correctamente")
+  } catch (error) {
+    console.error(error);
+    if (error.message.includes("Credenciales Invalidas")) return customResponse(res, 400, null, "Credenciales Invalidas")
+    return customResponse(res, 500, null, "Error al cambiar la contraseña.")
+  }
+}
+
+const changeUserPhoto = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.files || !req.files.userPhoto) {
+      return customResponse(res, 400, null, "No se envió ninguna imagen");
+    }
+
+    const { userPhoto } = req.files;
+    await changeUserPhotoService(id, userPhoto.tempFilePath);
+
+    return customResponse(res, 200, null, "Foto de usuario actualizada correctamente");
+  } catch (error) {
+    console.error(error);
+    if (error.message.includes("Usuario no encontrado")) {
+      return customResponse(res, 404, null, "Usuario no encontrado");
+    }
+    return customResponse(res, 500, null, "Error al cambiar la foto de usuario.");
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -299,4 +344,6 @@ module.exports = {
   addUserDebt,
   subtractUserDebt,
   getAllUsersNames,
+  changeUserPassword,
+  changeUserPhoto
 };

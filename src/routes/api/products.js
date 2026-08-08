@@ -7,10 +7,11 @@ const {
     getProductByName,
     updateProductController,
     deleteProductController,
-    buyProductsController,
+    buyCartProductsController,
     addProductToCart,
     getCartProducts,
-    deleteFromCart
+    deleteFromCart,
+    buyProductController
 } = require("../../controllers/productController");
 
 router.get("/", checkAuth, getAllProductsController);
@@ -20,7 +21,8 @@ router.get("/:id", checkAuth, getProductByIdController);
 router.post("/", checkAuth, createProductController);
 router.put("/:id", checkAuth, updateProductController);
 
-router.post("/buy", checkAuth, buyProductsController);
+router.post("/buyCart", checkAuth, buyCartProductsController);
+router.post("/:productId/buy", checkAuth, buyProductController)
 router.post("/addToCart", checkAuth, addProductToCart);
 router.get("/getCartProducts/:userId", checkAuth, getCartProducts);
 router.post("/deleteFromCart", checkAuth, deleteFromCart);
